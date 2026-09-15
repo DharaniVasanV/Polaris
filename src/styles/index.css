@@ -1,0 +1,6 @@
+/* Import POLARIS design system tokens and button utilities */
+@import './polaris.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

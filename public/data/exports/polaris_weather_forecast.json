@@ -1,0 +1,4698 @@
+{
+  "model_name": "weather_intelligence_engine",
+  "model_version": "1.0.0",
+  "forecast_horizon_hours": 6,
+  "grid_rows": 18,
+  "grid_columns": 26,
+  "total_cells": 468,
+  "source": "ECMWF ERA5 Reanalysis",
+  "dataset_period": "2020-01-01 to 2020-04-30",
+  "generated_timestamp": "2020-05-01T00:00:00",
+  "cells": [
+    {
+      "row": 0,
+      "column": 0,
+      "latitude": -75.0,
+      "longitude": -25.0,
+      "riskScore": 0.1118,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 1,
+      "latitude": -75.0,
+      "longitude": -21.0,
+      "riskScore": 0.2039,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 2,
+      "latitude": -75.0,
+      "longitude": -17.0,
+      "riskScore": 0.2944,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 3,
+      "latitude": -75.0,
+      "longitude": -13.0,
+      "riskScore": 0.2252,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 4,
+      "latitude": -75.0,
+      "longitude": -9.0,
+      "riskScore": 0.2011,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 5,
+      "latitude": -75.0,
+      "longitude": -5.0,
+      "riskScore": 0.1952,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 6,
+      "latitude": -75.0,
+      "longitude": -1.0,
+      "riskScore": 0.2163,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 7,
+      "latitude": -75.0,
+      "longitude": 3.0,
+      "riskScore": 0.2237,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 8,
+      "latitude": -75.0,
+      "longitude": 7.0,
+      "riskScore": 0.2148,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 9,
+      "latitude": -75.0,
+      "longitude": 11.0,
+      "riskScore": 0.2035,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 10,
+      "latitude": -75.0,
+      "longitude": 15.0,
+      "riskScore": 0.1898,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 11,
+      "latitude": -75.0,
+      "longitude": 19.0,
+      "riskScore": 0.175,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 12,
+      "latitude": -75.0,
+      "longitude": 23.0,
+      "riskScore": 0.1904,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 13,
+      "latitude": -75.0,
+      "longitude": 27.0,
+      "riskScore": 0.1946,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 14,
+      "latitude": -75.0,
+      "longitude": 31.0,
+      "riskScore": 0.2111,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 15,
+      "latitude": -75.0,
+      "longitude": 35.0,
+      "riskScore": 0.2573,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 16,
+      "latitude": -75.0,
+      "longitude": 39.0,
+      "riskScore": 0.294,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 17,
+      "latitude": -75.0,
+      "longitude": 43.0,
+      "riskScore": 0.2276,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 18,
+      "latitude": -75.0,
+      "longitude": 47.0,
+      "riskScore": 0.1497,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 19,
+      "latitude": -75.0,
+      "longitude": 51.0,
+      "riskScore": 0.0539,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 20,
+      "latitude": -75.0,
+      "longitude": 55.0,
+      "riskScore": 0.003,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 21,
+      "latitude": -75.0,
+      "longitude": 59.0,
+      "riskScore": 0.2112,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 22,
+      "latitude": -75.0,
+      "longitude": 63.0,
+      "riskScore": 0.209,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 23,
+      "latitude": -75.0,
+      "longitude": 67.0,
+      "riskScore": 0.1546,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 24,
+      "latitude": -75.0,
+      "longitude": 71.0,
+      "riskScore": 0.249,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 0,
+      "column": 25,
+      "latitude": -75.0,
+      "longitude": 75.0,
+      "riskScore": 0.2996,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 0,
+      "latitude": -74.0,
+      "longitude": -25.0,
+      "riskScore": 0.1594,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 1,
+      "latitude": -74.0,
+      "longitude": -21.0,
+      "riskScore": 0.1268,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 2,
+      "latitude": -74.0,
+      "longitude": -17.0,
+      "riskScore": 0.1081,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 3,
+      "latitude": -74.0,
+      "longitude": -13.0,
+      "riskScore": 0.2824,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 4,
+      "latitude": -74.0,
+      "longitude": -9.0,
+      "riskScore": 0.2192,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 5,
+      "latitude": -74.0,
+      "longitude": -5.0,
+      "riskScore": 0.2015,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 6,
+      "latitude": -74.0,
+      "longitude": -1.0,
+      "riskScore": 0.2127,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 7,
+      "latitude": -74.0,
+      "longitude": 3.0,
+      "riskScore": 0.2745,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 8,
+      "latitude": -74.0,
+      "longitude": 7.0,
+      "riskScore": 0.2536,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 9,
+      "latitude": -74.0,
+      "longitude": 11.0,
+      "riskScore": 0.2186,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 10,
+      "latitude": -74.0,
+      "longitude": 15.0,
+      "riskScore": 0.2005,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 11,
+      "latitude": -74.0,
+      "longitude": 19.0,
+      "riskScore": 0.216,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 12,
+      "latitude": -74.0,
+      "longitude": 23.0,
+      "riskScore": 0.2364,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 13,
+      "latitude": -74.0,
+      "longitude": 27.0,
+      "riskScore": 0.2217,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 14,
+      "latitude": -74.0,
+      "longitude": 31.0,
+      "riskScore": 0.2668,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 15,
+      "latitude": -74.0,
+      "longitude": 35.0,
+      "riskScore": 0.2782,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 16,
+      "latitude": -74.0,
+      "longitude": 39.0,
+      "riskScore": 0.2946,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 17,
+      "latitude": -74.0,
+      "longitude": 43.0,
+      "riskScore": 0.2457,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 18,
+      "latitude": -74.0,
+      "longitude": 47.0,
+      "riskScore": 0.2141,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 19,
+      "latitude": -74.0,
+      "longitude": 51.0,
+      "riskScore": 0.0821,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 20,
+      "latitude": -74.0,
+      "longitude": 55.0,
+      "riskScore": 0.005,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 21,
+      "latitude": -74.0,
+      "longitude": 59.0,
+      "riskScore": 0.1575,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 22,
+      "latitude": -74.0,
+      "longitude": 63.0,
+      "riskScore": 0.1907,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 23,
+      "latitude": -74.0,
+      "longitude": 67.0,
+      "riskScore": 0.2667,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 24,
+      "latitude": -74.0,
+      "longitude": 71.0,
+      "riskScore": 0.3112,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 1,
+      "column": 25,
+      "latitude": -74.0,
+      "longitude": 75.0,
+      "riskScore": 0.3366,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 0,
+      "latitude": -73.0,
+      "longitude": -25.0,
+      "riskScore": 0.185,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 1,
+      "latitude": -73.0,
+      "longitude": -21.0,
+      "riskScore": 0.0933,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 2,
+      "latitude": -73.0,
+      "longitude": -17.0,
+      "riskScore": 0.2088,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 3,
+      "latitude": -73.0,
+      "longitude": -13.0,
+      "riskScore": 0.2129,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 4,
+      "latitude": -73.0,
+      "longitude": -9.0,
+      "riskScore": 0.286,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 5,
+      "latitude": -73.0,
+      "longitude": -5.0,
+      "riskScore": 0.3065,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 6,
+      "latitude": -73.0,
+      "longitude": -1.0,
+      "riskScore": 0.2864,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 7,
+      "latitude": -73.0,
+      "longitude": 3.0,
+      "riskScore": 0.2854,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 8,
+      "latitude": -73.0,
+      "longitude": 7.0,
+      "riskScore": 0.271,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 9,
+      "latitude": -73.0,
+      "longitude": 11.0,
+      "riskScore": 0.3324,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 10,
+      "latitude": -73.0,
+      "longitude": 15.0,
+      "riskScore": 0.2024,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 11,
+      "latitude": -73.0,
+      "longitude": 19.0,
+      "riskScore": 0.2699,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 12,
+      "latitude": -73.0,
+      "longitude": 23.0,
+      "riskScore": 0.3323,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 13,
+      "latitude": -73.0,
+      "longitude": 27.0,
+      "riskScore": 0.2893,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 14,
+      "latitude": -73.0,
+      "longitude": 31.0,
+      "riskScore": 0.3064,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 15,
+      "latitude": -73.0,
+      "longitude": 35.0,
+      "riskScore": 0.3359,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 16,
+      "latitude": -73.0,
+      "longitude": 39.0,
+      "riskScore": 0.2619,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 17,
+      "latitude": -73.0,
+      "longitude": 43.0,
+      "riskScore": 0.2431,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 18,
+      "latitude": -73.0,
+      "longitude": 47.0,
+      "riskScore": 0.2634,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 19,
+      "latitude": -73.0,
+      "longitude": 51.0,
+      "riskScore": 0.2055,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 20,
+      "latitude": -73.0,
+      "longitude": 55.0,
+      "riskScore": 0.0567,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 21,
+      "latitude": -73.0,
+      "longitude": 59.0,
+      "riskScore": 0.1756,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 22,
+      "latitude": -73.0,
+      "longitude": 63.0,
+      "riskScore": 0.1547,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 23,
+      "latitude": -73.0,
+      "longitude": 67.0,
+      "riskScore": 0.1916,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 24,
+      "latitude": -73.0,
+      "longitude": 71.0,
+      "riskScore": 0.2427,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 2,
+      "column": 25,
+      "latitude": -73.0,
+      "longitude": 75.0,
+      "riskScore": 0.301,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 0,
+      "latitude": -72.0,
+      "longitude": -25.0,
+      "riskScore": 0.1897,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 1,
+      "latitude": -72.0,
+      "longitude": -21.0,
+      "riskScore": 0.1032,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 2,
+      "latitude": -72.0,
+      "longitude": -17.0,
+      "riskScore": 0.1876,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 3,
+      "latitude": -72.0,
+      "longitude": -13.0,
+      "riskScore": 0.1822,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 4,
+      "latitude": -72.0,
+      "longitude": -9.0,
+      "riskScore": 0.2101,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 5,
+      "latitude": -72.0,
+      "longitude": -5.0,
+      "riskScore": 0.2119,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 6,
+      "latitude": -72.0,
+      "longitude": -1.0,
+      "riskScore": 0.2227,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 7,
+      "latitude": -72.0,
+      "longitude": 3.0,
+      "riskScore": 0.2465,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 8,
+      "latitude": -72.0,
+      "longitude": 7.0,
+      "riskScore": 0.0396,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 9,
+      "latitude": -72.0,
+      "longitude": 11.0,
+      "riskScore": 0.0656,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 10,
+      "latitude": -72.0,
+      "longitude": 15.0,
+      "riskScore": 0.3386,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 11,
+      "latitude": -72.0,
+      "longitude": 19.0,
+      "riskScore": 0.0139,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 12,
+      "latitude": -72.0,
+      "longitude": 23.0,
+      "riskScore": 0.1802,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 13,
+      "latitude": -72.0,
+      "longitude": 27.0,
+      "riskScore": 0.4242,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 14,
+      "latitude": -72.0,
+      "longitude": 31.0,
+      "riskScore": 0.318,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 15,
+      "latitude": -72.0,
+      "longitude": 35.0,
+      "riskScore": 0.3892,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 16,
+      "latitude": -72.0,
+      "longitude": 39.0,
+      "riskScore": 0.297,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 17,
+      "latitude": -72.0,
+      "longitude": 43.0,
+      "riskScore": 0.2635,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 18,
+      "latitude": -72.0,
+      "longitude": 47.0,
+      "riskScore": 0.2095,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 19,
+      "latitude": -72.0,
+      "longitude": 51.0,
+      "riskScore": 0.1826,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 20,
+      "latitude": -72.0,
+      "longitude": 55.0,
+      "riskScore": 0.2124,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 21,
+      "latitude": -72.0,
+      "longitude": 59.0,
+      "riskScore": 0.0089,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 22,
+      "latitude": -72.0,
+      "longitude": 63.0,
+      "riskScore": 0.2056,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 23,
+      "latitude": -72.0,
+      "longitude": 67.0,
+      "riskScore": 0.2191,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 24,
+      "latitude": -72.0,
+      "longitude": 71.0,
+      "riskScore": 0.2496,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 3,
+      "column": 25,
+      "latitude": -72.0,
+      "longitude": 75.0,
+      "riskScore": 0.3086,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 0,
+      "latitude": -71.0,
+      "longitude": -25.0,
+      "riskScore": 0.1966,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 1,
+      "latitude": -71.0,
+      "longitude": -21.0,
+      "riskScore": 0.1144,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 2,
+      "latitude": -71.0,
+      "longitude": -17.0,
+      "riskScore": 0.1666,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 3,
+      "latitude": -71.0,
+      "longitude": -13.0,
+      "riskScore": 0.2208,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 4,
+      "latitude": -71.0,
+      "longitude": -9.0,
+      "riskScore": 0.1557,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 5,
+      "latitude": -71.0,
+      "longitude": -5.0,
+      "riskScore": 0.1435,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 6,
+      "latitude": -71.0,
+      "longitude": -1.0,
+      "riskScore": 0.2178,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 7,
+      "latitude": -71.0,
+      "longitude": 3.0,
+      "riskScore": 0.2746,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 8,
+      "latitude": -71.0,
+      "longitude": 7.0,
+      "riskScore": 0.0227,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 9,
+      "latitude": -71.0,
+      "longitude": 11.0,
+      "riskScore": 0.4442,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 10,
+      "latitude": -71.0,
+      "longitude": 15.0,
+      "riskScore": 0.0296,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 11,
+      "latitude": -71.0,
+      "longitude": 19.0,
+      "riskScore": 0.395,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 12,
+      "latitude": -71.0,
+      "longitude": 23.0,
+      "riskScore": 0.32,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 13,
+      "latitude": -71.0,
+      "longitude": 27.0,
+      "riskScore": 0.3711,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 14,
+      "latitude": -71.0,
+      "longitude": 31.0,
+      "riskScore": 0.3135,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 15,
+      "latitude": -71.0,
+      "longitude": 35.0,
+      "riskScore": 0.3227,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 16,
+      "latitude": -71.0,
+      "longitude": 39.0,
+      "riskScore": 0.3978,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 17,
+      "latitude": -71.0,
+      "longitude": 43.0,
+      "riskScore": 0.3125,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 18,
+      "latitude": -71.0,
+      "longitude": 47.0,
+      "riskScore": 0.211,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 19,
+      "latitude": -71.0,
+      "longitude": 51.0,
+      "riskScore": 0.2042,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 20,
+      "latitude": -71.0,
+      "longitude": 55.0,
+      "riskScore": 0.226,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 21,
+      "latitude": -71.0,
+      "longitude": 59.0,
+      "riskScore": 0.0744,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 22,
+      "latitude": -71.0,
+      "longitude": 63.0,
+      "riskScore": 0.2596,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 23,
+      "latitude": -71.0,
+      "longitude": 67.0,
+      "riskScore": 0.1788,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 24,
+      "latitude": -71.0,
+      "longitude": 71.0,
+      "riskScore": 0.0096,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 4,
+      "column": 25,
+      "latitude": -71.0,
+      "longitude": 75.0,
+      "riskScore": 0.0165,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 0,
+      "latitude": -70.0,
+      "longitude": -25.0,
+      "riskScore": 0.2129,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 1,
+      "latitude": -70.0,
+      "longitude": -21.0,
+      "riskScore": 0.1336,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 2,
+      "latitude": -70.0,
+      "longitude": -17.0,
+      "riskScore": 0.056,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 3,
+      "latitude": -70.0,
+      "longitude": -13.0,
+      "riskScore": 0.2274,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 4,
+      "latitude": -70.0,
+      "longitude": -9.0,
+      "riskScore": 0.1721,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 5,
+      "latitude": -70.0,
+      "longitude": -5.0,
+      "riskScore": 0.1651,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 6,
+      "latitude": -70.0,
+      "longitude": -1.0,
+      "riskScore": 0.3073,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 7,
+      "latitude": -70.0,
+      "longitude": 3.0,
+      "riskScore": 0.0448,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 8,
+      "latitude": -70.0,
+      "longitude": 7.0,
+      "riskScore": 0.0099,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 9,
+      "latitude": -70.0,
+      "longitude": 11.0,
+      "riskScore": 0.4473,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 10,
+      "latitude": -70.0,
+      "longitude": 15.0,
+      "riskScore": 0.0025,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 11,
+      "latitude": -70.0,
+      "longitude": 19.0,
+      "riskScore": 0.4497,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 12,
+      "latitude": -70.0,
+      "longitude": 23.0,
+      "riskScore": 0.0063,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 13,
+      "latitude": -70.0,
+      "longitude": 27.0,
+      "riskScore": 0.3194,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 14,
+      "latitude": -70.0,
+      "longitude": 31.0,
+      "riskScore": 0.3007,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 15,
+      "latitude": -70.0,
+      "longitude": 35.0,
+      "riskScore": 0.4596,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 16,
+      "latitude": -70.0,
+      "longitude": 39.0,
+      "riskScore": 0.3004,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 17,
+      "latitude": -70.0,
+      "longitude": 43.0,
+      "riskScore": 0.3302,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 18,
+      "latitude": -70.0,
+      "longitude": 47.0,
+      "riskScore": 0.2193,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 19,
+      "latitude": -70.0,
+      "longitude": 51.0,
+      "riskScore": 0.2714,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 20,
+      "latitude": -70.0,
+      "longitude": 55.0,
+      "riskScore": 0.238,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 21,
+      "latitude": -70.0,
+      "longitude": 59.0,
+      "riskScore": 0.3032,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 22,
+      "latitude": -70.0,
+      "longitude": 63.0,
+      "riskScore": 0.0496,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 23,
+      "latitude": -70.0,
+      "longitude": 67.0,
+      "riskScore": 0.1762,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 24,
+      "latitude": -70.0,
+      "longitude": 71.0,
+      "riskScore": 0.2188,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 5,
+      "column": 25,
+      "latitude": -70.0,
+      "longitude": 75.0,
+      "riskScore": 0.226,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 0,
+      "latitude": -69.0,
+      "longitude": -25.0,
+      "riskScore": 0.2292,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 1,
+      "latitude": -69.0,
+      "longitude": -21.0,
+      "riskScore": 0.1688,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 2,
+      "latitude": -69.0,
+      "longitude": -17.0,
+      "riskScore": 0.0103,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 3,
+      "latitude": -69.0,
+      "longitude": -13.0,
+      "riskScore": 0.2156,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 4,
+      "latitude": -69.0,
+      "longitude": -9.0,
+      "riskScore": 0.1481,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 5,
+      "latitude": -69.0,
+      "longitude": -5.0,
+      "riskScore": 0.2245,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 6,
+      "latitude": -69.0,
+      "longitude": -1.0,
+      "riskScore": 0.0691,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 7,
+      "latitude": -69.0,
+      "longitude": 3.0,
+      "riskScore": 0.0047,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 8,
+      "latitude": -69.0,
+      "longitude": 7.0,
+      "riskScore": 0.007,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 9,
+      "latitude": -69.0,
+      "longitude": 11.0,
+      "riskScore": 0.0254,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 10,
+      "latitude": -69.0,
+      "longitude": 15.0,
+      "riskScore": 0.326,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 11,
+      "latitude": -69.0,
+      "longitude": 19.0,
+      "riskScore": 0.3055,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 12,
+      "latitude": -69.0,
+      "longitude": 23.0,
+      "riskScore": 0.327,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 13,
+      "latitude": -69.0,
+      "longitude": 27.0,
+      "riskScore": 0.2732,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 14,
+      "latitude": -69.0,
+      "longitude": 31.0,
+      "riskScore": 0.4048,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 15,
+      "latitude": -69.0,
+      "longitude": 35.0,
+      "riskScore": 0.367,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 16,
+      "latitude": -69.0,
+      "longitude": 39.0,
+      "riskScore": 0.312,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 17,
+      "latitude": -69.0,
+      "longitude": 43.0,
+      "riskScore": 0.3269,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 18,
+      "latitude": -69.0,
+      "longitude": 47.0,
+      "riskScore": 0.3271,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 19,
+      "latitude": -69.0,
+      "longitude": 51.0,
+      "riskScore": 0.3018,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 20,
+      "latitude": -69.0,
+      "longitude": 55.0,
+      "riskScore": 0.3316,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 21,
+      "latitude": -69.0,
+      "longitude": 59.0,
+      "riskScore": 0.3731,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 22,
+      "latitude": -69.0,
+      "longitude": 63.0,
+      "riskScore": 0.2308,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 23,
+      "latitude": -69.0,
+      "longitude": 67.0,
+      "riskScore": 0.0684,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 24,
+      "latitude": -69.0,
+      "longitude": 71.0,
+      "riskScore": 0.017,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 6,
+      "column": 25,
+      "latitude": -69.0,
+      "longitude": 75.0,
+      "riskScore": 0.1659,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 0,
+      "latitude": -68.0,
+      "longitude": -25.0,
+      "riskScore": 0.2314,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 1,
+      "latitude": -68.0,
+      "longitude": -21.0,
+      "riskScore": 0.1328,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 2,
+      "latitude": -68.0,
+      "longitude": -17.0,
+      "riskScore": 0.0045,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 3,
+      "latitude": -68.0,
+      "longitude": -13.0,
+      "riskScore": 0.224,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 4,
+      "latitude": -68.0,
+      "longitude": -9.0,
+      "riskScore": 0.1638,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 5,
+      "latitude": -68.0,
+      "longitude": -5.0,
+      "riskScore": 0.0087,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 6,
+      "latitude": -68.0,
+      "longitude": -1.0,
+      "riskScore": 0.2395,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 7,
+      "latitude": -68.0,
+      "longitude": 3.0,
+      "riskScore": 0.0953,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 8,
+      "latitude": -68.0,
+      "longitude": 7.0,
+      "riskScore": 0.0406,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 9,
+      "latitude": -68.0,
+      "longitude": 11.0,
+      "riskScore": 0.1505,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 10,
+      "latitude": -68.0,
+      "longitude": 15.0,
+      "riskScore": 0.1637,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 11,
+      "latitude": -68.0,
+      "longitude": 19.0,
+      "riskScore": 0.1557,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 12,
+      "latitude": -68.0,
+      "longitude": 23.0,
+      "riskScore": 0.2221,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 13,
+      "latitude": -68.0,
+      "longitude": 27.0,
+      "riskScore": 0.1836,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 14,
+      "latitude": -68.0,
+      "longitude": 31.0,
+      "riskScore": 0.2258,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 15,
+      "latitude": -68.0,
+      "longitude": 35.0,
+      "riskScore": 0.182,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 16,
+      "latitude": -68.0,
+      "longitude": 39.0,
+      "riskScore": 0.3707,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 17,
+      "latitude": -68.0,
+      "longitude": 43.0,
+      "riskScore": 0.3344,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 18,
+      "latitude": -68.0,
+      "longitude": 47.0,
+      "riskScore": 0.3166,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 19,
+      "latitude": -68.0,
+      "longitude": 51.0,
+      "riskScore": 0.2532,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 20,
+      "latitude": -68.0,
+      "longitude": 55.0,
+      "riskScore": 0.4162,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 21,
+      "latitude": -68.0,
+      "longitude": 59.0,
+      "riskScore": 0.4221,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 22,
+      "latitude": -68.0,
+      "longitude": 63.0,
+      "riskScore": 0.2916,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 23,
+      "latitude": -68.0,
+      "longitude": 67.0,
+      "riskScore": 0.2759,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 24,
+      "latitude": -68.0,
+      "longitude": 71.0,
+      "riskScore": 0.2345,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 7,
+      "column": 25,
+      "latitude": -68.0,
+      "longitude": 75.0,
+      "riskScore": 0.1518,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 0,
+      "latitude": -67.0,
+      "longitude": -25.0,
+      "riskScore": 0.2442,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 1,
+      "latitude": -67.0,
+      "longitude": -21.0,
+      "riskScore": 0.2235,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 2,
+      "latitude": -67.0,
+      "longitude": -17.0,
+      "riskScore": 0.0021,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 3,
+      "latitude": -67.0,
+      "longitude": -13.0,
+      "riskScore": 0.1381,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 4,
+      "latitude": -67.0,
+      "longitude": -9.0,
+      "riskScore": 0.0356,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 5,
+      "latitude": -67.0,
+      "longitude": -5.0,
+      "riskScore": 0.0015,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 6,
+      "latitude": -67.0,
+      "longitude": -1.0,
+      "riskScore": 0.0343,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 7,
+      "latitude": -67.0,
+      "longitude": 3.0,
+      "riskScore": 0.0041,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 8,
+      "latitude": -67.0,
+      "longitude": 7.0,
+      "riskScore": 0.0053,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 9,
+      "latitude": -67.0,
+      "longitude": 11.0,
+      "riskScore": 0.1908,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 10,
+      "latitude": -67.0,
+      "longitude": 15.0,
+      "riskScore": 0.0544,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 11,
+      "latitude": -67.0,
+      "longitude": 19.0,
+      "riskScore": 0.0495,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 12,
+      "latitude": -67.0,
+      "longitude": 23.0,
+      "riskScore": 0.1763,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 13,
+      "latitude": -67.0,
+      "longitude": 27.0,
+      "riskScore": 0.1559,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 14,
+      "latitude": -67.0,
+      "longitude": 31.0,
+      "riskScore": 0.25,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 15,
+      "latitude": -67.0,
+      "longitude": 35.0,
+      "riskScore": 0.2377,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 16,
+      "latitude": -67.0,
+      "longitude": 39.0,
+      "riskScore": 0.1717,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 17,
+      "latitude": -67.0,
+      "longitude": 43.0,
+      "riskScore": 0.3057,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 18,
+      "latitude": -67.0,
+      "longitude": 47.0,
+      "riskScore": 0.0057,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 19,
+      "latitude": -67.0,
+      "longitude": 51.0,
+      "riskScore": 0.2143,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 20,
+      "latitude": -67.0,
+      "longitude": 55.0,
+      "riskScore": 0.2566,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 21,
+      "latitude": -67.0,
+      "longitude": 59.0,
+      "riskScore": 0.2716,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 22,
+      "latitude": -67.0,
+      "longitude": 63.0,
+      "riskScore": 0.2415,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 23,
+      "latitude": -67.0,
+      "longitude": 67.0,
+      "riskScore": 0.2462,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 24,
+      "latitude": -67.0,
+      "longitude": 71.0,
+      "riskScore": 0.2647,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 8,
+      "column": 25,
+      "latitude": -67.0,
+      "longitude": 75.0,
+      "riskScore": 0.2373,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 0,
+      "latitude": -66.0,
+      "longitude": -25.0,
+      "riskScore": 0.2626,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 1,
+      "latitude": -66.0,
+      "longitude": -21.0,
+      "riskScore": 0.2756,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 2,
+      "latitude": -66.0,
+      "longitude": -17.0,
+      "riskScore": 0.0019,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 3,
+      "latitude": -66.0,
+      "longitude": -13.0,
+      "riskScore": 0.0236,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 4,
+      "latitude": -66.0,
+      "longitude": -9.0,
+      "riskScore": 0.0752,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 5,
+      "latitude": -66.0,
+      "longitude": -5.0,
+      "riskScore": 0.0015,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 6,
+      "latitude": -66.0,
+      "longitude": -1.0,
+      "riskScore": 0.0483,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 7,
+      "latitude": -66.0,
+      "longitude": 3.0,
+      "riskScore": 0.2398,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 8,
+      "latitude": -66.0,
+      "longitude": 7.0,
+      "riskScore": 0.195,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 9,
+      "latitude": -66.0,
+      "longitude": 11.0,
+      "riskScore": 0.1768,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 10,
+      "latitude": -66.0,
+      "longitude": 15.0,
+      "riskScore": 0.167,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 11,
+      "latitude": -66.0,
+      "longitude": 19.0,
+      "riskScore": 0.2172,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 12,
+      "latitude": -66.0,
+      "longitude": 23.0,
+      "riskScore": 0.0476,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 13,
+      "latitude": -66.0,
+      "longitude": 27.0,
+      "riskScore": 0.2468,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 14,
+      "latitude": -66.0,
+      "longitude": 31.0,
+      "riskScore": 0.2692,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 15,
+      "latitude": -66.0,
+      "longitude": 35.0,
+      "riskScore": 0.2503,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 16,
+      "latitude": -66.0,
+      "longitude": 39.0,
+      "riskScore": 0.0055,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 17,
+      "latitude": -66.0,
+      "longitude": 43.0,
+      "riskScore": 0.2881,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 18,
+      "latitude": -66.0,
+      "longitude": 47.0,
+      "riskScore": 0.1444,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 19,
+      "latitude": -66.0,
+      "longitude": 51.0,
+      "riskScore": 0.2106,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 20,
+      "latitude": -66.0,
+      "longitude": 55.0,
+      "riskScore": 0.1696,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 21,
+      "latitude": -66.0,
+      "longitude": 59.0,
+      "riskScore": 0.2337,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 22,
+      "latitude": -66.0,
+      "longitude": 63.0,
+      "riskScore": 0.1905,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 23,
+      "latitude": -66.0,
+      "longitude": 67.0,
+      "riskScore": 0.1778,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 24,
+      "latitude": -66.0,
+      "longitude": 71.0,
+      "riskScore": 0.2585,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 9,
+      "column": 25,
+      "latitude": -66.0,
+      "longitude": 75.0,
+      "riskScore": 0.2123,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 0,
+      "latitude": -65.0,
+      "longitude": -25.0,
+      "riskScore": 0.258,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 1,
+      "latitude": -65.0,
+      "longitude": -21.0,
+      "riskScore": 0.1501,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 2,
+      "latitude": -65.0,
+      "longitude": -17.0,
+      "riskScore": 0.285,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 3,
+      "latitude": -65.0,
+      "longitude": -13.0,
+      "riskScore": 0.0264,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 4,
+      "latitude": -65.0,
+      "longitude": -9.0,
+      "riskScore": 0.0436,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 5,
+      "latitude": -65.0,
+      "longitude": -5.0,
+      "riskScore": 0.2749,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 6,
+      "latitude": -65.0,
+      "longitude": -1.0,
+      "riskScore": 0.3149,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 7,
+      "latitude": -65.0,
+      "longitude": 3.0,
+      "riskScore": 0.0019,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 8,
+      "latitude": -65.0,
+      "longitude": 7.0,
+      "riskScore": 0.0038,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 9,
+      "latitude": -65.0,
+      "longitude": 11.0,
+      "riskScore": 0.1679,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 10,
+      "latitude": -65.0,
+      "longitude": 15.0,
+      "riskScore": 0.2078,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 11,
+      "latitude": -65.0,
+      "longitude": 19.0,
+      "riskScore": 0.2085,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 12,
+      "latitude": -65.0,
+      "longitude": 23.0,
+      "riskScore": 0.1218,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 13,
+      "latitude": -65.0,
+      "longitude": 27.0,
+      "riskScore": 0.0538,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 14,
+      "latitude": -65.0,
+      "longitude": 31.0,
+      "riskScore": 0.2352,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 15,
+      "latitude": -65.0,
+      "longitude": 35.0,
+      "riskScore": 0.2621,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 16,
+      "latitude": -65.0,
+      "longitude": 39.0,
+      "riskScore": 0.26,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 17,
+      "latitude": -65.0,
+      "longitude": 43.0,
+      "riskScore": 0.3334,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 18,
+      "latitude": -65.0,
+      "longitude": 47.0,
+      "riskScore": 0.1314,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 19,
+      "latitude": -65.0,
+      "longitude": 51.0,
+      "riskScore": 0.1417,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 20,
+      "latitude": -65.0,
+      "longitude": 55.0,
+      "riskScore": 0.1817,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 21,
+      "latitude": -65.0,
+      "longitude": 59.0,
+      "riskScore": 0.28,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 22,
+      "latitude": -65.0,
+      "longitude": 63.0,
+      "riskScore": 0.1326,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 23,
+      "latitude": -65.0,
+      "longitude": 67.0,
+      "riskScore": 0.1935,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 24,
+      "latitude": -65.0,
+      "longitude": 71.0,
+      "riskScore": 0.0041,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 10,
+      "column": 25,
+      "latitude": -65.0,
+      "longitude": 75.0,
+      "riskScore": 0.0806,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 0,
+      "latitude": -64.0,
+      "longitude": -25.0,
+      "riskScore": 0.1893,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 1,
+      "latitude": -64.0,
+      "longitude": -21.0,
+      "riskScore": 0.2522,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 2,
+      "latitude": -64.0,
+      "longitude": -17.0,
+      "riskScore": 0.004,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 3,
+      "latitude": -64.0,
+      "longitude": -13.0,
+      "riskScore": 0.033,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 4,
+      "latitude": -64.0,
+      "longitude": -9.0,
+      "riskScore": 0.0059,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 5,
+      "latitude": -64.0,
+      "longitude": -5.0,
+      "riskScore": 0.0019,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 6,
+      "latitude": -64.0,
+      "longitude": -1.0,
+      "riskScore": 0.2414,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 7,
+      "latitude": -64.0,
+      "longitude": 3.0,
+      "riskScore": 0.1316,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 8,
+      "latitude": -64.0,
+      "longitude": 7.0,
+      "riskScore": 0.0075,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 9,
+      "latitude": -64.0,
+      "longitude": 11.0,
+      "riskScore": 0.1786,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 10,
+      "latitude": -64.0,
+      "longitude": 15.0,
+      "riskScore": 0.1228,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 11,
+      "latitude": -64.0,
+      "longitude": 19.0,
+      "riskScore": 0.2473,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 12,
+      "latitude": -64.0,
+      "longitude": 23.0,
+      "riskScore": 0.1518,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 13,
+      "latitude": -64.0,
+      "longitude": 27.0,
+      "riskScore": 0.1833,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 14,
+      "latitude": -64.0,
+      "longitude": 31.0,
+      "riskScore": 0.2373,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 15,
+      "latitude": -64.0,
+      "longitude": 35.0,
+      "riskScore": 0.2903,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 16,
+      "latitude": -64.0,
+      "longitude": 39.0,
+      "riskScore": 0.2627,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 17,
+      "latitude": -64.0,
+      "longitude": 43.0,
+      "riskScore": 0.2833,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 18,
+      "latitude": -64.0,
+      "longitude": 47.0,
+      "riskScore": 0.2878,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 19,
+      "latitude": -64.0,
+      "longitude": 51.0,
+      "riskScore": 0.1666,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 20,
+      "latitude": -64.0,
+      "longitude": 55.0,
+      "riskScore": 0.1391,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 21,
+      "latitude": -64.0,
+      "longitude": 59.0,
+      "riskScore": 0.1515,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 22,
+      "latitude": -64.0,
+      "longitude": 63.0,
+      "riskScore": 0.219,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 23,
+      "latitude": -64.0,
+      "longitude": 67.0,
+      "riskScore": 0.2758,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 24,
+      "latitude": -64.0,
+      "longitude": 71.0,
+      "riskScore": 0.2718,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 11,
+      "column": 25,
+      "latitude": -64.0,
+      "longitude": 75.0,
+      "riskScore": 0.2618,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 0,
+      "latitude": -63.0,
+      "longitude": -25.0,
+      "riskScore": 0.1175,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 1,
+      "latitude": -63.0,
+      "longitude": -21.0,
+      "riskScore": 0.1133,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 2,
+      "latitude": -63.0,
+      "longitude": -17.0,
+      "riskScore": 0.1496,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 3,
+      "latitude": -63.0,
+      "longitude": -13.0,
+      "riskScore": 0.0235,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 4,
+      "latitude": -63.0,
+      "longitude": -9.0,
+      "riskScore": 0.0124,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 5,
+      "latitude": -63.0,
+      "longitude": -5.0,
+      "riskScore": 0.0309,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 6,
+      "latitude": -63.0,
+      "longitude": -1.0,
+      "riskScore": 0.1767,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 7,
+      "latitude": -63.0,
+      "longitude": 3.0,
+      "riskScore": 0.1783,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 8,
+      "latitude": -63.0,
+      "longitude": 7.0,
+      "riskScore": 0.2525,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 9,
+      "latitude": -63.0,
+      "longitude": 11.0,
+      "riskScore": 0.2102,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 10,
+      "latitude": -63.0,
+      "longitude": 15.0,
+      "riskScore": 0.1326,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 11,
+      "latitude": -63.0,
+      "longitude": 19.0,
+      "riskScore": 0.1667,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 12,
+      "latitude": -63.0,
+      "longitude": 23.0,
+      "riskScore": 0.2711,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 13,
+      "latitude": -63.0,
+      "longitude": 27.0,
+      "riskScore": 0.2592,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 14,
+      "latitude": -63.0,
+      "longitude": 31.0,
+      "riskScore": 0.1552,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 15,
+      "latitude": -63.0,
+      "longitude": 35.0,
+      "riskScore": 0.3195,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 16,
+      "latitude": -63.0,
+      "longitude": 39.0,
+      "riskScore": 0.2985,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 17,
+      "latitude": -63.0,
+      "longitude": 43.0,
+      "riskScore": 0.1868,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 18,
+      "latitude": -63.0,
+      "longitude": 47.0,
+      "riskScore": 0.2853,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 19,
+      "latitude": -63.0,
+      "longitude": 51.0,
+      "riskScore": 0.0878,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 20,
+      "latitude": -63.0,
+      "longitude": 55.0,
+      "riskScore": 0.1884,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 21,
+      "latitude": -63.0,
+      "longitude": 59.0,
+      "riskScore": 0.2855,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 22,
+      "latitude": -63.0,
+      "longitude": 63.0,
+      "riskScore": 0.2624,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 23,
+      "latitude": -63.0,
+      "longitude": 67.0,
+      "riskScore": 0.3088,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 24,
+      "latitude": -63.0,
+      "longitude": 71.0,
+      "riskScore": 0.2012,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 12,
+      "column": 25,
+      "latitude": -63.0,
+      "longitude": 75.0,
+      "riskScore": 0.0198,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 0,
+      "latitude": -62.0,
+      "longitude": -25.0,
+      "riskScore": 0.1603,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 1,
+      "latitude": -62.0,
+      "longitude": -21.0,
+      "riskScore": 0.0042,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 2,
+      "latitude": -62.0,
+      "longitude": -17.0,
+      "riskScore": 0.3038,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 3,
+      "latitude": -62.0,
+      "longitude": -13.0,
+      "riskScore": 0.0628,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 4,
+      "latitude": -62.0,
+      "longitude": -9.0,
+      "riskScore": 0.0312,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 5,
+      "latitude": -62.0,
+      "longitude": -5.0,
+      "riskScore": 0.378,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 6,
+      "latitude": -62.0,
+      "longitude": -1.0,
+      "riskScore": 0.1637,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 7,
+      "latitude": -62.0,
+      "longitude": 3.0,
+      "riskScore": 0.2452,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 8,
+      "latitude": -62.0,
+      "longitude": 7.0,
+      "riskScore": 0.2522,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 9,
+      "latitude": -62.0,
+      "longitude": 11.0,
+      "riskScore": 0.1706,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 10,
+      "latitude": -62.0,
+      "longitude": 15.0,
+      "riskScore": 0.1576,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 11,
+      "latitude": -62.0,
+      "longitude": 19.0,
+      "riskScore": 0.2544,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 12,
+      "latitude": -62.0,
+      "longitude": 23.0,
+      "riskScore": 0.2161,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 13,
+      "latitude": -62.0,
+      "longitude": 27.0,
+      "riskScore": 0.0949,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 14,
+      "latitude": -62.0,
+      "longitude": 31.0,
+      "riskScore": 0.0168,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 15,
+      "latitude": -62.0,
+      "longitude": 35.0,
+      "riskScore": 0.3428,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 16,
+      "latitude": -62.0,
+      "longitude": 39.0,
+      "riskScore": 0.3525,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 17,
+      "latitude": -62.0,
+      "longitude": 43.0,
+      "riskScore": 0.267,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 18,
+      "latitude": -62.0,
+      "longitude": 47.0,
+      "riskScore": 0.031,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 19,
+      "latitude": -62.0,
+      "longitude": 51.0,
+      "riskScore": 0.2591,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 20,
+      "latitude": -62.0,
+      "longitude": 55.0,
+      "riskScore": 0.0521,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 21,
+      "latitude": -62.0,
+      "longitude": 59.0,
+      "riskScore": 0.127,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 22,
+      "latitude": -62.0,
+      "longitude": 63.0,
+      "riskScore": 0.2879,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 23,
+      "latitude": -62.0,
+      "longitude": 67.0,
+      "riskScore": 0.0037,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 24,
+      "latitude": -62.0,
+      "longitude": 71.0,
+      "riskScore": 0.0037,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 13,
+      "column": 25,
+      "latitude": -62.0,
+      "longitude": 75.0,
+      "riskScore": 0.0851,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 0,
+      "latitude": -61.0,
+      "longitude": -25.0,
+      "riskScore": 0.177,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 1,
+      "latitude": -61.0,
+      "longitude": -21.0,
+      "riskScore": 0.1132,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 2,
+      "latitude": -61.0,
+      "longitude": -17.0,
+      "riskScore": 0.0214,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 3,
+      "latitude": -61.0,
+      "longitude": -13.0,
+      "riskScore": 0.355,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 4,
+      "latitude": -61.0,
+      "longitude": -9.0,
+      "riskScore": 0.3483,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 5,
+      "latitude": -61.0,
+      "longitude": -5.0,
+      "riskScore": 0.3698,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 6,
+      "latitude": -61.0,
+      "longitude": -1.0,
+      "riskScore": 0.179,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 7,
+      "latitude": -61.0,
+      "longitude": 3.0,
+      "riskScore": 0.2243,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 8,
+      "latitude": -61.0,
+      "longitude": 7.0,
+      "riskScore": 0.2364,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 9,
+      "latitude": -61.0,
+      "longitude": 11.0,
+      "riskScore": 0.1917,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 10,
+      "latitude": -61.0,
+      "longitude": 15.0,
+      "riskScore": 0.2345,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 11,
+      "latitude": -61.0,
+      "longitude": 19.0,
+      "riskScore": 0.2771,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 12,
+      "latitude": -61.0,
+      "longitude": 23.0,
+      "riskScore": 0.3789,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 13,
+      "latitude": -61.0,
+      "longitude": 27.0,
+      "riskScore": 0.2725,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 14,
+      "latitude": -61.0,
+      "longitude": 31.0,
+      "riskScore": 0.2777,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 15,
+      "latitude": -61.0,
+      "longitude": 35.0,
+      "riskScore": 0.3624,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 16,
+      "latitude": -61.0,
+      "longitude": 39.0,
+      "riskScore": 0.3775,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 17,
+      "latitude": -61.0,
+      "longitude": 43.0,
+      "riskScore": 0.2807,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 18,
+      "latitude": -61.0,
+      "longitude": 47.0,
+      "riskScore": 0.1174,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 19,
+      "latitude": -61.0,
+      "longitude": 51.0,
+      "riskScore": 0.2687,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 20,
+      "latitude": -61.0,
+      "longitude": 55.0,
+      "riskScore": 0.1332,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 21,
+      "latitude": -61.0,
+      "longitude": 59.0,
+      "riskScore": 0.1221,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 22,
+      "latitude": -61.0,
+      "longitude": 63.0,
+      "riskScore": 0.0649,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 23,
+      "latitude": -61.0,
+      "longitude": 67.0,
+      "riskScore": 0.0644,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 24,
+      "latitude": -61.0,
+      "longitude": 71.0,
+      "riskScore": 0.0116,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 14,
+      "column": 25,
+      "latitude": -61.0,
+      "longitude": 75.0,
+      "riskScore": 0.0479,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 0,
+      "latitude": -60.0,
+      "longitude": -25.0,
+      "riskScore": 0.1817,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 1,
+      "latitude": -60.0,
+      "longitude": -21.0,
+      "riskScore": 0.289,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 2,
+      "latitude": -60.0,
+      "longitude": -17.0,
+      "riskScore": 0.0045,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 3,
+      "latitude": -60.0,
+      "longitude": -13.0,
+      "riskScore": 0.0771,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 4,
+      "latitude": -60.0,
+      "longitude": -9.0,
+      "riskScore": 0.1926,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 5,
+      "latitude": -60.0,
+      "longitude": -5.0,
+      "riskScore": 0.0462,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 6,
+      "latitude": -60.0,
+      "longitude": -1.0,
+      "riskScore": 0.2167,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 7,
+      "latitude": -60.0,
+      "longitude": 3.0,
+      "riskScore": 0.2323,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 8,
+      "latitude": -60.0,
+      "longitude": 7.0,
+      "riskScore": 0.1666,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 9,
+      "latitude": -60.0,
+      "longitude": 11.0,
+      "riskScore": 0.2525,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 10,
+      "latitude": -60.0,
+      "longitude": 15.0,
+      "riskScore": 0.2566,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 11,
+      "latitude": -60.0,
+      "longitude": 19.0,
+      "riskScore": 0.0561,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 12,
+      "latitude": -60.0,
+      "longitude": 23.0,
+      "riskScore": 0.0229,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 13,
+      "latitude": -60.0,
+      "longitude": 27.0,
+      "riskScore": 0.3941,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 14,
+      "latitude": -60.0,
+      "longitude": 31.0,
+      "riskScore": 0.3241,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 15,
+      "latitude": -60.0,
+      "longitude": 35.0,
+      "riskScore": 0.0093,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 16,
+      "latitude": -60.0,
+      "longitude": 39.0,
+      "riskScore": 0.3792,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 17,
+      "latitude": -60.0,
+      "longitude": 43.0,
+      "riskScore": 0.2785,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 18,
+      "latitude": -60.0,
+      "longitude": 47.0,
+      "riskScore": 0.1892,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 19,
+      "latitude": -60.0,
+      "longitude": 51.0,
+      "riskScore": 0.0255,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 20,
+      "latitude": -60.0,
+      "longitude": 55.0,
+      "riskScore": 0.2465,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 21,
+      "latitude": -60.0,
+      "longitude": 59.0,
+      "riskScore": 0.1013,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 22,
+      "latitude": -60.0,
+      "longitude": 63.0,
+      "riskScore": 0.1727,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 23,
+      "latitude": -60.0,
+      "longitude": 67.0,
+      "riskScore": 0.1574,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 24,
+      "latitude": -60.0,
+      "longitude": 71.0,
+      "riskScore": 0.0117,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 15,
+      "column": 25,
+      "latitude": -60.0,
+      "longitude": 75.0,
+      "riskScore": 0.1,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 0,
+      "latitude": -59.0,
+      "longitude": -25.0,
+      "riskScore": 0.2764,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 1,
+      "latitude": -59.0,
+      "longitude": -21.0,
+      "riskScore": 0.3312,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 2,
+      "latitude": -59.0,
+      "longitude": -17.0,
+      "riskScore": 0.2988,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 3,
+      "latitude": -59.0,
+      "longitude": -13.0,
+      "riskScore": 0.0015,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 4,
+      "latitude": -59.0,
+      "longitude": -9.0,
+      "riskScore": 0.1402,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 5,
+      "latitude": -59.0,
+      "longitude": -5.0,
+      "riskScore": 0.0181,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 6,
+      "latitude": -59.0,
+      "longitude": -1.0,
+      "riskScore": 0.1527,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 7,
+      "latitude": -59.0,
+      "longitude": 3.0,
+      "riskScore": 0.1945,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 8,
+      "latitude": -59.0,
+      "longitude": 7.0,
+      "riskScore": 0.2297,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 9,
+      "latitude": -59.0,
+      "longitude": 11.0,
+      "riskScore": 0.2843,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 10,
+      "latitude": -59.0,
+      "longitude": 15.0,
+      "riskScore": 0.282,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 11,
+      "latitude": -59.0,
+      "longitude": 19.0,
+      "riskScore": 0.3563,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 12,
+      "latitude": -59.0,
+      "longitude": 23.0,
+      "riskScore": 0.3415,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 13,
+      "latitude": -59.0,
+      "longitude": 27.0,
+      "riskScore": 0.0353,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 14,
+      "latitude": -59.0,
+      "longitude": 31.0,
+      "riskScore": 0.2048,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 15,
+      "latitude": -59.0,
+      "longitude": 35.0,
+      "riskScore": 0.3241,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 16,
+      "latitude": -59.0,
+      "longitude": 39.0,
+      "riskScore": 0.378,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 17,
+      "latitude": -59.0,
+      "longitude": 43.0,
+      "riskScore": 0.3415,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 18,
+      "latitude": -59.0,
+      "longitude": 47.0,
+      "riskScore": 0.0768,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 19,
+      "latitude": -59.0,
+      "longitude": 51.0,
+      "riskScore": 0.1208,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 20,
+      "latitude": -59.0,
+      "longitude": 55.0,
+      "riskScore": 0.1879,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 21,
+      "latitude": -59.0,
+      "longitude": 59.0,
+      "riskScore": 0.1899,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 22,
+      "latitude": -59.0,
+      "longitude": 63.0,
+      "riskScore": 0.1931,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 23,
+      "latitude": -59.0,
+      "longitude": 67.0,
+      "riskScore": 0.2546,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 24,
+      "latitude": -59.0,
+      "longitude": 71.0,
+      "riskScore": 0.0932,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 16,
+      "column": 25,
+      "latitude": -59.0,
+      "longitude": 75.0,
+      "riskScore": 0.176,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 0,
+      "latitude": -58.0,
+      "longitude": -25.0,
+      "riskScore": 0.2617,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 1,
+      "latitude": -58.0,
+      "longitude": -21.0,
+      "riskScore": 0.0524,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 2,
+      "latitude": -58.0,
+      "longitude": -17.0,
+      "riskScore": 0.0558,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 3,
+      "latitude": -58.0,
+      "longitude": -13.0,
+      "riskScore": 0.3415,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 4,
+      "latitude": -58.0,
+      "longitude": -9.0,
+      "riskScore": 0.3588,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 5,
+      "latitude": -58.0,
+      "longitude": -5.0,
+      "riskScore": 0.0139,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 6,
+      "latitude": -58.0,
+      "longitude": -1.0,
+      "riskScore": 0.0726,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 7,
+      "latitude": -58.0,
+      "longitude": 3.0,
+      "riskScore": 0.2097,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 8,
+      "latitude": -58.0,
+      "longitude": 7.0,
+      "riskScore": 0.0246,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 9,
+      "latitude": -58.0,
+      "longitude": 11.0,
+      "riskScore": 0.212,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 10,
+      "latitude": -58.0,
+      "longitude": 15.0,
+      "riskScore": 0.2622,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 11,
+      "latitude": -58.0,
+      "longitude": 19.0,
+      "riskScore": 0.2628,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 12,
+      "latitude": -58.0,
+      "longitude": 23.0,
+      "riskScore": 0.3095,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 13,
+      "latitude": -58.0,
+      "longitude": 27.0,
+      "riskScore": 0.3281,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 14,
+      "latitude": -58.0,
+      "longitude": 31.0,
+      "riskScore": 0.3121,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 15,
+      "latitude": -58.0,
+      "longitude": 35.0,
+      "riskScore": 0.2718,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 16,
+      "latitude": -58.0,
+      "longitude": 39.0,
+      "riskScore": 0.3694,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 17,
+      "latitude": -58.0,
+      "longitude": 43.0,
+      "riskScore": 0.3607,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 18,
+      "latitude": -58.0,
+      "longitude": 47.0,
+      "riskScore": 0.2976,
+      "riskClass": "MODERATE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 19,
+      "latitude": -58.0,
+      "longitude": 51.0,
+      "riskScore": 0.0188,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 20,
+      "latitude": -58.0,
+      "longitude": 55.0,
+      "riskScore": 0.1903,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 21,
+      "latitude": -58.0,
+      "longitude": 59.0,
+      "riskScore": 0.0591,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 22,
+      "latitude": -58.0,
+      "longitude": 63.0,
+      "riskScore": 0.1995,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 23,
+      "latitude": -58.0,
+      "longitude": 67.0,
+      "riskScore": 0.2356,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 24,
+      "latitude": -58.0,
+      "longitude": 71.0,
+      "riskScore": 0.2393,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    },
+    {
+      "row": 17,
+      "column": 25,
+      "latitude": -58.0,
+      "longitude": 75.0,
+      "riskScore": 0.0246,
+      "riskClass": "SAFE",
+      "timestamp": "2020-05-01T00:00:00",
+      "forecastHorizonHours": 6
+    }
+  ],
+  "forecast_type": "OFFLINE_DEMO_FALLBACK",
+  "disclaimer": "OFFLINE DEMO / FALLBACK FORECAST ONLY. AI-based decision-support prototype derived from ERA5 reanalysis. Not certified for statutory navigation safety.",
+  "input_observation_timestamp": "2020-04-30T18:00:00Z",
+  "predicted_target_timestamp": "2020-05-01T00:00:00Z",
+  "temporal_step_note": "Model predicts T+6h into the future: input observation is 2020-04-30 18:00 UTC, predicted target is 2020-05-01 00:00 UTC."
+}

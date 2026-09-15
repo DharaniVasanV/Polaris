@@ -1,0 +1,33 @@
+{
+  "model_name": "POLARIS Sea-Ice ConvLSTM",
+  "model_type": "ConvLSTM2D",
+  "model_version": "1.0",
+  "input_sequence_length": 7,
+  "prediction_horizon": 1,
+  "input_channels": 5,
+  "channels": [
+    "SIC",
+    "Wind_U",
+    "Wind_V",
+    "Ocean_U",
+    "Ocean_V"
+  ],
+  "output": "Predicted Sea-Ice Concentration",
+  "output_range": "0 to 1",
+  "training_period": "2020-01-01 to 2020-05-09",
+  "validation_period": "2020-05-10 to 2020-06-04",
+  "testing_period": "2020-06-04 to 2020-06-30",
+  "study_region": "[-70.0 to -60.0 Lat, 0.0 to 30.0 Lon]",
+  "spatial_resolution": "0.25 degrees",
+  "grid_shape": [
+    41,
+    121
+  ],
+  "training_samples": 122,
+  "validation_samples": 26,
+  "testing_samples": 27,
+  "test_mae": 0.07360977679491043,
+  "test_rmse": 0.1338188736830611,
+  "baseline_mae": 0.03285938501358032,
+  "baseline_rmse": 0.07006051022896942
+}

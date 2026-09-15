@@ -1,0 +1,274 @@
+{
+  "model_name": "Antarctic Weather Risk MLP",
+  "version": "1.0.0",
+  "task": "6-hour-ahead Antarctic maritime weather navigation risk regression and classification",
+  "training_dataset": "ERA5 Reanalysis (Jan 2020 - Apr 2020)",
+  "training_period": [
+    "2020-01-01T06:00:00.000000000",
+    "2020-03-25T06:00:00.000000000"
+  ],
+  "validation_period": [
+    "2020-03-25T12:00:00.000000000",
+    "2020-04-12T06:00:00.000000000"
+  ],
+  "test_period": [
+    "2020-04-12T12:00:00.000000000",
+    "2020-04-30T12:00:00.000000000"
+  ],
+  "geographic_region": {
+    "latitude_range": [
+      -75.0,
+      -58.0
+    ],
+    "longitude_range": [
+      -25.0,
+      75.0
+    ],
+    "domain": "Antarctic Southern Ocean (POLARIS navigation zone)"
+  },
+  "features": {
+    "feature_count": 27,
+    "feature_names": [
+      "latitude",
+      "longitude",
+      "u10",
+      "v10",
+      "wind_speed",
+      "wind_direction",
+      "wind_gust",
+      "gust_ratio",
+      "temperature_c",
+      "mslp_hpa",
+      "precipitation_mm",
+      "pressure_change_3h",
+      "pressure_change_6h",
+      "hour",
+      "day_of_year",
+      "month",
+      "sin_hour",
+      "cos_hour",
+      "wind_speed_lag_1h",
+      "wind_speed_lag_3h",
+      "wind_speed_lag_6h",
+      "wind_gust_lag_1h",
+      "wind_gust_lag_3h",
+      "wind_gust_lag_6h",
+      "pressure_lag_1h",
+      "pressure_lag_3h",
+      "pressure_lag_6h"
+    ]
+  },
+  "target": {
+    "description": "Continuous prototype navigation weather risk score at T + 6 hours",
+    "range": [
+      0.0,
+      1.0
+    ],
+    "classification_cutoffs": {
+      "SAFE": {
+        "min": 0.0,
+        "max": 0.25,
+        "code": 0
+      },
+      "MODERATE": {
+        "min": 0.25,
+        "max": 0.5,
+        "code": 1
+      },
+      "HIGH": {
+        "min": 0.5,
+        "max": 0.75,
+        "code": 2
+      },
+      "CRITICAL": {
+        "min": 0.75,
+        "max": 1.0,
+        "code": 3
+      }
+    }
+  },
+  "number_of_epochs": 30,
+  "best_epoch": 10,
+  "optimizer": "Adam",
+  "learning_rate": 0.001,
+  "loss_function": "MSELoss",
+  "model_architecture": [
+    {
+      "layer": "Input",
+      "features": 27
+    },
+    {
+      "layer": "Dense",
+      "units": 128,
+      "activation": "ReLU"
+    },
+    {
+      "layer": "Dropout",
+      "rate": 0.2
+    },
+    {
+      "layer": "Dense",
+      "units": 64,
+      "activation": "ReLU"
+    },
+    {
+      "layer": "Dropout",
+      "rate": 0.2
+    },
+    {
+      "layer": "Dense",
+      "units": 32,
+      "activation": "ReLU"
+    },
+    {
+      "layer": "Output",
+      "units": 1,
+      "activation": "Sigmoid"
+    }
+  ],
+  "training_metrics": {
+    "final_train_loss": 0.0017266506926513555,
+    "best_val_loss": 0.004079082885766356
+  },
+  "validation_metrics": {
+    "best_epoch_val_mae": 0.045959439128637314,
+    "best_epoch_val_rmse": 0.06386769562959671,
+    "best_epoch_val_r2": 0.7590875625610352
+  },
+  "test_metrics": {
+    "regression": {
+      "mae": 0.051624614745378494,
+      "rmse": 0.0684608523707746,
+      "mse": 0.0046868883073329926,
+      "r2": 0.76531982421875
+    },
+    "classification": {
+      "accuracy": 0.8180064537348991,
+      "precision_macro": 0.7814194502844023,
+      "recall_macro": 0.5165605443739737,
+      "f1_macro": 0.5437568467624817,
+      "precision_weighted": 0.8283299900709531,
+      "recall_weighted": 0.8180064537348991,
+      "f1_weighted": 0.8144997886061444,
+      "confusion_matrix": [
+        [
+          53047,
+          10740,
+          6,
+          0
+        ],
+        [
+          5435,
+          37015,
+          246,
+          0
+        ],
+        [
+          16,
+          3686,
+          1950,
+          3
+        ],
+        [
+          0,
+          18,
+          323,
+          8
+        ]
+      ]
+    },
+    "class_distribution": {
+      "actual_counts": {
+        "SAFE": 63793,
+        "MODERATE": 42696,
+        "HIGH": 5655,
+        "CRITICAL": 349
+      },
+      "actual_percentages": {
+        "SAFE": "56.71%",
+        "MODERATE": "37.95%",
+        "HIGH": "5.03%",
+        "CRITICAL": "0.31%"
+      },
+      "predicted_counts": {
+        "SAFE": 58498,
+        "MODERATE": 51459,
+        "HIGH": 2525,
+        "CRITICAL": 11
+      },
+      "predicted_percentages": {
+        "SAFE": "52.00%",
+        "MODERATE": "45.74%",
+        "HIGH": "2.24%",
+        "CRITICAL": "0.01%"
+      }
+    }
+  },
+  "risk_thresholds": {
+    "_comment": "POLARIS Prototype Navigation Weather Risk Scoring Configuration. Proxy physics-based operational label, NOT official IMO/NCPOR certification.",
+    "weights": {
+      "wind_speed": 0.35,
+      "wind_gust": 0.3,
+      "pressure": 0.15,
+      "temperature": 0.1,
+      "precipitation": 0.1,
+      "cloud_cover": 0.0
+    },
+    "parameters": {
+      "wind_speed": {
+        "min_val_ms": 5.0,
+        "max_val_ms": 25.0,
+        "description": "Beaufort scale scale mapping: calm/gentle breeze (<5 m/s) to gale/storm (>25 m/s)"
+      },
+      "wind_gust": {
+        "min_val_ms": 8.0,
+        "max_val_ms": 32.0,
+        "description": "Antarctic gust hazard mapping: moderate gusts (<8 m/s) to violent katabatic gusts (>32 m/s)"
+      },
+      "pressure": {
+        "reference_high_hpa": 1005.0,
+        "critical_low_hpa": 950.0,
+        "description": "Deep Antarctic subpolar depression: standard polar sea level (1005 hPa) down to severe polar low (950 hPa)"
+      },
+      "temperature": {
+        "safe_temp_c": 0.0,
+        "extreme_cold_c": -25.0,
+        "description": "Freezing spray and structural icing hazard: starts below 0C, extreme below -25C"
+      },
+      "precipitation": {
+        "min_val_mm": 0.05,
+        "max_val_mm": 2.5,
+        "description": "Precipitation/snowfall intensity in mm/h affecting marine visibility and topside icing"
+      },
+      "cloud_cover": {
+        "min_val": 0.0,
+        "max_val": 1.0,
+        "description": "Total cloud cover fraction (omitted in ERA5 Jan-Apr 2020 dataset, weight set to 0.0)"
+      }
+    },
+    "risk_classes": {
+      "SAFE": {
+        "min": 0.0,
+        "max": 0.25,
+        "code": 0
+      },
+      "MODERATE": {
+        "min": 0.25,
+        "max": 0.5,
+        "code": 1
+      },
+      "HIGH": {
+        "min": 0.5,
+        "max": 0.75,
+        "code": 2
+      },
+      "CRITICAL": {
+        "min": 0.75,
+        "max": 1.0,
+        "code": 3
+      }
+    }
+  },
+  "timestamp_of_training": "2026-09-07T12:02:21.272937+00:00",
+  "disclaimer": "PROTOTYPE/ENGINEERED navigation risk model. NOT official IMO/NCPOR certification."
+}

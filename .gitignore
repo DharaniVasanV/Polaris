@@ -1,0 +1,58 @@
+# POLARIS — Git Ignore Rules
+
+# ─── Python ───────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+.Python
+*.egg
+*.egg-info/
+build/
+*.so
+.venv/
+venv/
+env/
+
+# ─── Environment / Secrets ────────────────────────────────────────────────────
+# NEVER commit .env files — real Copernicus credentials live here
+backend/.env
+.env
+.env.local
+.env.*.local
+
+# ─── Node / Frontend ──────────────────────────────────────────────────────────
+node_modules/
+dist/
+.vite/
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# ─── Test / Coverage ──────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+*.coveragerc
+
+# ─── Windows helper scripts (local only) ──────────────────────────────────────
+*.bat
+
+# ─── Generated outputs (local documentation) ──────────────────────────────────
+outputs/
+
+# ─── Model Artefacts ──────────────────────────────────────────────────────────
+# Model weights are tracked in git so Render can load them without S3.
+# If weights are large (>100MB), move to Git LFS or external storage instead.
+# Uncomment the lines below to EXCLUDE model weights from git:
+# backend/models/
+# *.pt
+# *.keras
+# *.pkl
+# *.h5
