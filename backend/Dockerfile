@@ -1,12 +1,9 @@
-# ─── POLARIS Backend — Hugging Face Spaces Dockerfile ───────────────────────
-# Base: Python 3.11 slim for smallest possible image
+# ─── POLARIS Backend Dockerfile ────────────────────────
 FROM python:3.11-slim
 
-# HF Spaces runs as non-root user 1000:1000 — set up accordingly
-RUN useradd -m -u 1000 user
 WORKDIR /app
 
-# Install OS-level dependencies needed by TensorFlow / Pillow
+# Install OS-level dependencies required by TensorFlow, OpenCV, and Pillow
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libsm6 \
@@ -16,29 +13,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies first (cached layer)
+# Install Python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir pillow
 
-# Copy backend source code and model weights
+# Copy backend source code and trained model weights
 COPY . .
 
-# Set ownership to non-root user
-RUN chown -R user:user /app
-USER user
-
-# HF Spaces requires port 7860
-ENV PORT=7860
+# Set PYTHONPATH so src modules resolve cleanly
+ENV PYTHONPATH=/app
+ENV PORT=8000
 ENV HOST=0.0.0.0
 
-# Expose port
-EXPOSE 7860
+EXPOSE 8000
 
-# Start the FastAPI server
-CMD ["python", "-c", "\
-import os, uvicorn; \
-port = int(os.environ.get('PORT', 7860)); \
-uvicorn.run('src.api.main:app', host='0.0.0.0', port=port, reload=False) \
-"]
+# Start FastAPI app
+CMD ["python", "-c", "import os, uvicorn; port = int(os.environ.get('PORT', 8000)); uvicorn.run('src.api.main:app', host='0.0.0.0', port=port, reload=False)"]
