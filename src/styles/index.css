@@ -1,3 +1,6 @@
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+
 /* Import POLARIS design system tokens and button utilities */
 @import './polaris.css';
 

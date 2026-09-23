@@ -48,7 +48,7 @@ export interface ModelHealthResponse {
   };
 }
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Ensures the coordinate array has at least 10 points for the GRU sequence window.

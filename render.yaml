@@ -1,36 +1,27 @@
-# POLARIS — Render Blueprint
-# Defines both services in one file.
+# POLARIS — Render Blueprint (100% Free Plan)
+# Defines both backend and frontend services.
 # Docs: https://render.com/docs/blueprint-spec
 
 services:
-  # ── 1. POLARIS Backend (FastAPI) ──────────────────────────────────────────
+  # ── 1. POLARIS Backend (FastAPI Web Service) ──────────────────────────────
   - type: web
     name: polaris-backend
     runtime: python
     rootDir: backend
     buildCommand: pip install -r requirements.txt
     startCommand: python run_server.py
-    plan: standard  # Use 'standard' — tensorflow+torch need >512MB RAM
+    plan: free
     envVars:
       - key: RENDER
         value: "true"
       - key: PYTHON_VERSION
         value: "3.11.0"
+      - key: TF_CPP_MIN_LOG_LEVEL
+        value: "2"
       - key: COPERNICUS_CLIENT_ID
-        sync: false   # Set manually in Render dashboard — never commit this
+        sync: false   # Set manually in Render dashboard
       - key: COPERNICUS_CLIENT_SECRET
-        sync: false   # Set manually in Render dashboard — never commit this
-      # Optional Sentinel-1 AOI overrides (defaults built into the code):
-      # - key: SENTINEL1_AOI_MIN_LAT
-      #   value: "-75.0"
-      # - key: SENTINEL1_AOI_MAX_LAT
-      #   value: "-58.0"
-      # - key: SENTINEL1_AOI_MIN_LON
-      #   value: "-25.0"
-      # - key: SENTINEL1_AOI_MAX_LON
-      #   value: "75.0"
-      # - key: SENTINEL1_LOOKBACK_HOURS
-      #   value: "168"
+        sync: false   # Set manually in Render dashboard
 
   # ── 2. POLARIS Frontend (React + Vite Static Site) ────────────────────────
   - type: web
@@ -40,7 +31,7 @@ services:
     staticPublishPath: dist
     envVars:
       - key: VITE_API_BASE_URL
-        sync: false   # Set to your backend URL, e.g. https://polaris-backend.onrender.com
+        sync: false   # Set to https://polaris-backend.onrender.com
     routes:
       - type: rewrite
         source: /*

@@ -5,6 +5,7 @@ import { polarisStore } from '../store/polarisStore';
 import { formatRiskBadge } from '../utils/formatters';
 import { WhyThisRouteModal } from '../components/common/WhyThisRouteModal';
 import { ModelTransparency } from '../components/common/ModelTransparency';
+import { VesselCoordinateControl } from '../components/common/VesselCoordinateControl';
 import { formatSentinel1StatusLabel, formatAcquisitionTime } from '../services/sentinel1Service';
 
 interface DashboardScreenProps {
@@ -275,11 +276,14 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ state }) => {
                 </div>
               </div>
 
+              {/* Phase 10C: Manual Vessel Position & Coordinate-Driven Satellite Control */}
+              <VesselCoordinateControl state={state} />
+
               <div className="glass-panel p-3 rounded-lg border border-slate-800 flex flex-col gap-1.5 text-[11px]">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Simulated AIS Telemetry & Heading</span>
                 <div className="flex justify-between text-slate-400">
                   <span>Current Pos:</span>
-                  <strong className="text-slate-200 font-mono">
+                  <strong className="text-sky-300 font-mono">
                     {Math.abs(state.departureLocation.latitude).toFixed(2)}°S, {state.departureLocation.longitude.toFixed(2)}°E
                   </strong>
                 </div>
@@ -297,6 +301,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ state }) => {
                 </div>
               </div>
 
+
               <div className="glass-panel p-3 rounded-lg border border-slate-800 flex flex-col gap-1.5 text-[11px]">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Environmental Sensors</span>
                 <div className="flex justify-between text-slate-400"><span>Wind:</span><strong className="text-slate-200 font-mono">22 km/h WNW</strong></div>
@@ -305,7 +310,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ state }) => {
                 <div className="flex justify-between text-slate-400"><span>Air Temp:</span><strong className="text-slate-200 font-mono">-14.2°C</strong></div>
               </div>
 
-              {/* Phase 10A: Sentinel-1 GRD Recent Observation — Telemetry integration */}
+              {/* Phase 10A & 10B: Sentinel-1 GRD Recent Observation & SAR Imagery */}
               <div className={`glass-panel p-3 rounded-lg border flex flex-col gap-1.5 text-[11px] ${
                 state.sentinel1Status === 'ONLINE' ? 'border-sky-700/50 bg-sky-950/20' : 'border-slate-800'
               }`}>
@@ -342,8 +347,67 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ state }) => {
                       <span>Acquired:</span>
                       <strong className="text-slate-200 font-mono text-[9px]">{formatAcquisitionTime(state.sentinel1Data.observation.acquisition_time)}</strong>
                     </div>
+                    {/* Phase 10B SAR Image Details */}
+                    <div className="pt-1.5 border-t border-slate-800/80 flex flex-col gap-2">
+                      <div className="flex justify-between items-center text-slate-400">
+                        <span className="font-semibold text-slate-300">🛰 Sentinel-1 SAR:</span>
+                        <button
+                          onClick={() => polarisStore.toggleMapLayer('sentinel1Sar')}
+                          className={`px-2 py-0.5 rounded text-[9px] font-bold transition-all border flex items-center gap-1 ${
+                            state.mapLayers.sentinel1Sar
+                              ? 'bg-sky-500 text-slate-950 border-sky-400 shadow-sm shadow-sky-500/50'
+                              : 'bg-slate-800 text-slate-400 border-slate-700 hover:bg-slate-700'
+                          }`}
+                        >
+                          <span>{state.mapLayers.sentinel1Sar ? '● ON' : '○ OFF'}</span>
+                        </button>
+                      </div>
+
+                      {/* SAR Opacity Control Slider */}
+                      {state.mapLayers.sentinel1Sar && (
+                        <div className="flex flex-col gap-1 bg-slate-900/70 p-1.5 rounded border border-slate-800">
+                          <div className="flex justify-between items-center text-[9px] text-slate-400">
+                            <span>SAR Opacity:</span>
+                            <strong className="font-mono font-bold text-sky-300">{Math.round(state.sentinel1Opacity * 100)}%</strong>
+                          </div>
+                          <input
+                            type="range"
+                            min="0.30"
+                            max="0.90"
+                            step="0.05"
+                            value={state.sentinel1Opacity}
+                            onChange={(e) => polarisStore.setSentinel1Opacity(parseFloat(e.target.value))}
+                            className="w-full accent-sky-400 h-1 bg-slate-800 rounded cursor-pointer"
+                          />
+                        </div>
+                      )}
+
+                      {state.sentinel1ImageMetadata && (
+                        <div className="flex flex-col gap-1 text-[10px]">
+                          <div className="flex justify-between text-slate-400">
+                            <span>Polarization:</span>
+                            <strong className="text-cyan-300 font-mono">
+                              {state.sentinel1ImageMetadata.polarization}
+                              {state.sentinel1ImageMetadata.selected_band ? ` (${state.sentinel1ImageMetadata.selected_band})` : ''}
+                            </strong>
+                          </div>
+
+                          {/* SAR Backscatter Spectrum Legend */}
+                          <div className="mt-1 pt-1.5 border-t border-slate-800/60 flex flex-col gap-1">
+                            <span className="text-[8px] font-bold text-sky-400 uppercase tracking-wider">
+                              SENTINEL-1 SAR BACKSCATTER
+                            </span>
+                            <div className="h-2 w-full rounded bg-gradient-to-r from-slate-950 via-cyan-900 to-cyan-300 border border-slate-700" />
+                            <div className="flex justify-between text-[8px] text-slate-400 font-mono">
+                              <span>Low backscatter</span>
+                              <span>High backscatter</span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <p className="text-[9px] text-slate-500 leading-tight pt-0.5">
-                      Provenance: RECENT (not LIVE) · Copernicus Data Space
+                      Provenance: RECENT (not LIVE) · Copernicus Process API
                     </p>
                   </>
                 ) : (
@@ -454,6 +518,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ state }) => {
                   { key: 'shortestRoute', label: '8. Shortest Direct (Rejected)' },
                   { key: 'oceanCurrent', label: '9. ACC Ocean Current Vectors' },
                   { key: 'bathymetry', label: '10. Bathymetry Depth Contours' },
+                  { key: 'sentinel1Sar', label: '11. 🛰 Sentinel-1 SAR Backscatter Overlay' },
                 ].map(({ key, label }) => (
                   <label
                     key={key}

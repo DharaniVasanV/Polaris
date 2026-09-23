@@ -53,7 +53,7 @@ export interface PolarisSeaIceForecast {
   forecast: Record<ForecastHorizon, SeaIceCell[]>;
 }
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL } from '../config/api';
 
 /**
  * Fetches the 5-step multi-horizon ConvLSTM sea-ice forecast.

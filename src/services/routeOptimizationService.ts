@@ -7,7 +7,7 @@
 import { GeoPoint, Route, RouteWaypoint, RouteMetrics, VesselProfile } from '../types/domain';
 import { RiskWeights } from '../types/risk';
 
-const API_BASE_URL = 'http://127.0.0.1:8000';
+import { API_BASE_URL } from '../config/api';
 
 export interface BackendWaypoint {
   step_index: number;

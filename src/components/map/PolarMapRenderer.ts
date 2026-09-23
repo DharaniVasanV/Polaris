@@ -28,6 +28,8 @@ export class PolarMapRenderer {
   private props: PolarMapRendererProps;
   private animationFrameId: number | null = null;
   private radarAngle: number = 0;
+  private sarImage: HTMLImageElement | null = null;
+  private sarImageUrl: string | null = null;
 
   constructor(canvas: HTMLCanvasElement, props: PolarMapRendererProps) {
     this.canvas = canvas;
@@ -75,6 +77,11 @@ export class PolarMapRenderer {
     // 3. Render Bathymetry Depth Gradients
     if (layers.bathymetry) {
       this.renderBathymetry(ctx, width, height);
+    }
+
+    // 3.5. Render Phase 10B Sentinel-1 SAR Backscatter Image Overlay
+    if (layers.sentinel1Sar) {
+      this.renderSentinel1SarLayer(ctx, width, height, state);
     }
 
     // 4. Render Sea-Ice Concentration Grid Cells & Ice Edge
@@ -168,6 +175,83 @@ export class PolarMapRenderer {
 
     ctx.fillStyle = grad;
     ctx.fillRect(0, shelfTop.y, w, shelfBot.y - shelfTop.y + 40);
+  }
+
+  private renderSentinel1SarLayer(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+    state: PolarisAppState
+  ) {
+    const imageUrl = state.sentinel1ImageUrl;
+    if (!imageUrl || !state.sentinel1ImageAvailable) return;
+
+    // Load image asynchronously if not already cached in renderer
+    if (this.sarImageUrl !== imageUrl) {
+      this.sarImageUrl = imageUrl;
+      this.sarImage = null; // Invalidate stale image immediately so old pixels are never drawn at new AOI
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = imageUrl;
+      img.onload = () => {
+        this.sarImage = img;
+      };
+      img.onerror = () => {
+        console.warn('[PolarMapRenderer] Failed to load SAR image from:', imageUrl);
+        this.sarImage = null;
+      };
+    }
+
+    if (!this.sarImage || !this.sarImage.complete || this.sarImage.naturalWidth === 0) {
+      return;
+    }
+
+    // Georeferenced placement: derive pixel bounds from the single AOI source of truth
+    const bbox = state.sentinel1ImageBbox || state.sentinel1ImageMetadata?.image_bbox;
+    if (!bbox) {
+      return;
+    }
+
+    // Convert geographic corners (top-left = maxLat, minLon; bottom-right = minLat, maxLon)
+    const pNW = geoToMap({ latitude: bbox.max_lat, longitude: bbox.min_lon }, w, h);
+    const pSE = geoToMap({ latitude: bbox.min_lat, longitude: bbox.max_lon }, w, h);
+
+    const imgX = pNW.x;
+    const imgY = pNW.y;
+    const imgW = pSE.x - pNW.x;
+    const imgH = pSE.y - pNW.y;
+
+    ctx.save();
+    // High-visibility SAR overlay opacity (configurable 0.30 - 0.90, default 0.70)
+    ctx.globalAlpha = state.sentinel1Opacity ?? 0.70;
+    ctx.drawImage(this.sarImage, imgX, imgY, imgW, imgH);
+    ctx.restore();
+
+    // Georeferenced AOI sector boundary outline & telemetry badge
+    ctx.save();
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([4, 4]);
+    ctx.strokeRect(imgX, imgY, imgW, imgH);
+
+    // Overlay indicator label
+    const pol = state.sentinel1ImageMetadata?.polarization || 'HH+HV';
+    const band = state.sentinel1ImageMetadata?.selected_band ? ` (${state.sentinel1ImageMetadata.selected_band})` : '';
+    const acq = state.sentinel1Data?.observation?.acquisition_time
+      ? new Date(state.sentinel1Data.observation.acquisition_time).toISOString().replace('.000', '')
+      : 'RECENT';
+
+    ctx.fillStyle = 'rgba(6, 11, 20, 0.90)';
+    ctx.fillRect(imgX + 6, imgY + 6, 340, 20);
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+    ctx.strokeRect(imgX + 6, imgY + 6, 340, 20);
+
+    ctx.fillStyle = '#38BDF8';
+    ctx.font = 'bold 9px "JetBrains Mono", monospace';
+    ctx.fillText(`🛰 SENTINEL-1 SAR BACKSCATTER [${pol}${band}] ${acq} (RECENT)`, imgX + 10, imgY + 19);
+    ctx.restore();
   }
 
   private renderSeaIceGrid(

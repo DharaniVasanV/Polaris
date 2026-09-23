@@ -4,10 +4,12 @@ import { PolarMap } from '../components/map/PolarMap';
 import { polarisStore } from '../store/polarisStore';
 import { WhyNotShortestModal } from '../components/common/WhyNotShortestModal';
 import { WhyThisRouteModal } from '../components/common/WhyThisRouteModal';
+import { VesselCoordinateControl } from '../components/common/VesselCoordinateControl';
 
 interface VoyagePlannerScreenProps {
   state: PolarisAppState;
 }
+
 
 export const VoyagePlannerScreen: React.FC<VoyagePlannerScreenProps> = ({ state }) => {
   const activeRoute = state.routes.find((r) => r.id === state.selectedRouteId) || state.routes[0];
@@ -37,7 +39,10 @@ export const VoyagePlannerScreen: React.FC<VoyagePlannerScreenProps> = ({ state 
         </button>
 
         <div className="flex flex-col gap-3">
+          <VesselCoordinateControl state={state} />
+
           <div className="p-3 rounded-lg bg-slate-950/80 border border-slate-800 flex flex-col gap-2">
+
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-semibold text-slate-400 uppercase">Departure Corridor</label>
               <input type="text" value={state.departureLocation.name} className="w-full px-2.5 py-1.5 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono" readOnly />

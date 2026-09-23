@@ -20,7 +20,7 @@ import { checkModelServerHealth } from '../services/aiModelService';
 import { updateIcebergForecastWithGRU } from '../services/forecastEngineIntegration';
 import { fetchSeaIceForecast, checkSeaIceServerHealth, ForecastHorizon } from '../services/seaIceModelService';
 import { fetchWeatherForecast, checkWeatherServerHealth, WeatherGridResponse } from '../services/weatherModelService';
-import { fetchSentinel1Latest, Sentinel1StatusResponse } from '../services/sentinel1Service';
+import { fetchSentinel1Latest, fetchSentinel1ImageMetadata, getSentinel1ImageUrl, Sentinel1StatusResponse } from '../services/sentinel1Service';
 import { optimizeRoutesViaBackend } from '../services/routeOptimizationService';
 import { simulateScenarioViaBackend, runSensitivitySweepViaBackend } from '../services/scenarioService';
 import { BackendScenarioType, BackendScenarioParameters } from '../types/scenario';
@@ -64,6 +64,7 @@ const DEFAULT_MAP_LAYERS: MapLayerState = {
   shortestRoute: true,
   researchStations: true,
   fleetVessels: true,
+  sentinel1Sar: false,
 };
 
 function createInitialState(): PolarisAppState {
@@ -144,10 +145,18 @@ function createInitialState(): PolarisAppState {
     weatherForecastData: null,
     lastWeatherSync: undefined,
 
-    // Phase 10A: Sentinel-1
+    // Phase 10A & 10B: Sentinel-1
     sentinel1Status: 'CONNECTING',
     sentinel1Data: null,
     lastSentinel1Sync: undefined,
+
+    sentinel1ImageAvailable: false,
+    sentinel1ImageUrl: null,
+    sentinel1ImageBbox: null,
+    sentinel1ImageMetadata: null,
+    sentinel1ImageLoading: false,
+    sentinel1ImageError: null,
+    sentinel1Opacity: 0.70,
   };
 }
 
@@ -657,11 +666,80 @@ class PolarisStore {
     }
   }
 
-  // Phase 10A: Sentinel-1 GRD Recent Observation Sync
-  public async syncSentinel1() {
+  // Phase 10C: Manual Vessel Position Update
+  // Phase 10C: Manual Vessel Position Update
+  public updateVesselPosition(latitude: number, longitude: number, updateSatellite: boolean = true) {
+    if (isNaN(latitude) || latitude < -90 || latitude > 90 || isNaN(longitude) || longitude < -180 || longitude > 180) {
+      this.setState(() => ({
+        sentinel1ImageAvailable: false,
+        sentinel1ImageUrl: null,
+        sentinel1ImageBbox: null,
+        sentinel1ImageMetadata: null,
+        sentinel1ImageLoading: false,
+        sentinel1ImageError: 'INVALID_COORDINATES: Latitude must be between -90 and 90, and longitude between -180 and 180.',
+      }));
+      return;
+    }
+
+    // Invalidate stale satellite imagery immediately upon coordinate change
+    this.setState((prev) => ({
+      departureLocation: {
+        ...prev.departureLocation,
+        latitude,
+        longitude,
+      },
+      sentinel1ImageAvailable: false,
+      sentinel1ImageUrl: null,
+      sentinel1ImageBbox: null,
+      sentinel1ImageMetadata: null,
+      sentinel1ImageLoading: updateSatellite,
+      sentinel1ImageError: null,
+    }));
+
+    this.addEventLog(
+      'ROUTE',
+      `Manual Vessel Position set to (${latitude >= 0 ? latitude.toFixed(2) + '°N' : Math.abs(latitude).toFixed(2) + '°S'}, ${longitude >= 0 ? longitude.toFixed(2) + '°E' : Math.abs(longitude).toFixed(2) + '°W'}) [SIMULATED / MANUAL POSITION].`,
+      'NORMAL'
+    );
+
+    if (updateSatellite) {
+      this.syncSentinel1(latitude, longitude);
+    }
+  }
+
+  private sentinel1SyncInProgress = false;
+  private sentinel1ImageSyncInProgress = false;
+
+  // Phase 10A & 10C: Sentinel-1 GRD Recent Observation Sync
+  public async syncSentinel1(lat?: number, lon?: number, radiusKm: number = 250) {
+    if (this.sentinel1SyncInProgress) {
+      return;
+    }
+    this.sentinel1SyncInProgress = true;
     try {
-      this.setState(() => ({ sentinel1Status: 'CONNECTING' }));
-      const result = await fetchSentinel1Latest();
+      // Invalidate old SAR image state to avoid stale display
+      this.setState(() => ({
+        sentinel1Status: 'CONNECTING',
+        sentinel1ImageAvailable: false,
+        sentinel1ImageUrl: null,
+        sentinel1ImageBbox: null,
+        sentinel1ImageMetadata: null,
+        sentinel1ImageLoading: true,
+        sentinel1ImageError: null,
+      }));
+      const targetLat = typeof lat === 'number' ? lat : this.state.departureLocation.latitude;
+      const targetLon = typeof lon === 'number' ? lon : this.state.departureLocation.longitude;
+
+      if (isNaN(targetLat) || targetLat < -90 || targetLat > 90 || isNaN(targetLon) || targetLon < -180 || targetLon > 180) {
+        this.setState(() => ({
+          sentinel1Status: 'OFFLINE',
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: 'INVALID_COORDINATES: Coordinates outside valid ranges.',
+        }));
+        return;
+      }
+
+      const result = await fetchSentinel1Latest(targetLat, targetLon, radiusKm);
 
       const now = new Date();
       const timeStr = `${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')} UTC`;
@@ -671,6 +749,7 @@ class PolarisStore {
         case 'OK':
           status = 'ONLINE';
           break;
+        case 'NO_RECENT_COVERAGE':
         case 'NO_DATA':
           status = 'NO_DATA';
           break;
@@ -693,17 +772,161 @@ class PolarisStore {
       if (result.status === 'OK' && result.observation) {
         this.addEventLog(
           'ENV',
-          `Sentinel-1 GRD recent observation retrieved: ${result.observation.product_id} acquired at ${result.observation.acquisition_time} (RECENT — not LIVE).`,
+          `Sentinel-1 GRD observation retrieved for local AOI (${targetLat.toFixed(2)}°, ${targetLon.toFixed(2)}°): ${result.observation.product_id} acquired at ${result.observation.acquisition_time} (RECENT — not LIVE).`,
           'NORMAL'
         );
+        // Sync SAR Image metadata for local AOI
+        await this.syncSentinel1Image(targetLat, targetLon, radiusKm);
+      } else if (result.status === 'NO_RECENT_COVERAGE' || result.status === 'NO_DATA') {
+        this.addEventLog(
+          'ENV',
+          `Sentinel-1: No recent satellite coverage over vessel position (${targetLat.toFixed(2)}°, ${targetLon.toFixed(2)}°) within ${radiusKm} km search radius.`,
+          'NORMAL'
+        );
+        this.setState(() => ({
+          sentinel1ImageAvailable: false,
+          sentinel1ImageUrl: null,
+          sentinel1ImageBbox: null,
+          sentinel1ImageMetadata: null,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: 'NO_RECENT_COVERAGE: No recent Sentinel-1 acquisition covers this location.',
+        }));
       } else if (result.status === 'NOT_CONFIGURED') {
         this.addEventLog('ENV', 'Sentinel-1: Copernicus credentials not configured.', 'NORMAL');
+        this.setState(() => ({
+          sentinel1ImageAvailable: false,
+          sentinel1ImageUrl: null,
+          sentinel1ImageBbox: null,
+          sentinel1ImageMetadata: null,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: 'Copernicus credentials not configured.',
+        }));
+      } else {
+        this.setState(() => ({
+          sentinel1ImageAvailable: false,
+          sentinel1ImageUrl: null,
+          sentinel1ImageBbox: null,
+          sentinel1ImageMetadata: null,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: result.message || 'Sentinel-1 service unavailable',
+        }));
       }
     } catch (err) {
       console.warn('[POLARIS] Error syncing Sentinel-1 data:', err);
-      this.setState(() => ({ sentinel1Status: 'OFFLINE' }));
+      this.setState(() => ({
+        sentinel1Status: 'OFFLINE',
+        sentinel1ImageAvailable: false,
+        sentinel1ImageUrl: null,
+        sentinel1ImageBbox: null,
+        sentinel1ImageMetadata: null,
+        sentinel1ImageLoading: false,
+        sentinel1ImageError: 'POLARIS backend is offline.',
+      }));
+    } finally {
+      this.sentinel1SyncInProgress = false;
     }
   }
+
+  // Phase 10B & 10C: Sentinel-1 SAR Image Sync
+  public async syncSentinel1Image(lat?: number, lon?: number, radiusKm: number = 250) {
+    if (this.sentinel1ImageSyncInProgress) {
+      return;
+    }
+    this.sentinel1ImageSyncInProgress = true;
+    try {
+      this.setState(() => ({
+        sentinel1ImageLoading: true,
+        sentinel1ImageError: null,
+        sentinel1ImageAvailable: false,
+        sentinel1ImageUrl: null,
+        sentinel1ImageBbox: null,
+        sentinel1ImageMetadata: null,
+      }));
+      const targetLat = typeof lat === 'number' ? lat : this.state.departureLocation.latitude;
+      const targetLon = typeof lon === 'number' ? lon : this.state.departureLocation.longitude;
+
+      if (isNaN(targetLat) || targetLat < -90 || targetLat > 90 || isNaN(targetLon) || targetLon < -180 || targetLon > 180) {
+        this.setState(() => ({
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: 'INVALID_COORDINATES: Coordinates outside valid ranges.',
+        }));
+        return;
+      }
+
+      const imgRes = await fetchSentinel1ImageMetadata(targetLat, targetLon, radiusKm);
+
+      if (imgRes.status === 'OK' && imgRes.metadata && imgRes.metadata.image_available) {
+        const imageUrl = getSentinel1ImageUrl(targetLat, targetLon, radiusKm);
+        this.setState(() => ({
+          sentinel1ImageAvailable: true,
+          sentinel1ImageUrl: imageUrl,
+          sentinel1ImageBbox: imgRes.metadata!.image_bbox,
+          sentinel1ImageMetadata: imgRes.metadata,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: null,
+        }));
+        this.addEventLog(
+          'ENV',
+          `Sentinel-1 SAR image layer ready for local vessel map overlay (${imgRes.metadata.polarization} polarization, local AOI synced).`,
+          'NORMAL'
+        );
+      } else if (imgRes.status === 'NO_RECENT_COVERAGE' || imgRes.status === 'NO_DATA') {
+        this.setState(() => ({
+          sentinel1ImageAvailable: false,
+          sentinel1ImageUrl: null,
+          sentinel1ImageBbox: null,
+          sentinel1ImageMetadata: null,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: 'NO_RECENT_COVERAGE: No recent Sentinel-1 acquisition covers this location.',
+        }));
+      } else if (imgRes.status === 'PROCESSING_ERROR') {
+        this.setState(() => ({
+          sentinel1ImageAvailable: false,
+          sentinel1ImageUrl: null,
+          sentinel1ImageBbox: null,
+          sentinel1ImageMetadata: null,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: `PROCESSING_ERROR: ${imgRes.message || 'SAR image generation failed.'}`,
+        }));
+      } else if (imgRes.status === 'INVALID_COORDINATES') {
+        this.setState(() => ({
+          sentinel1ImageAvailable: false,
+          sentinel1ImageUrl: null,
+          sentinel1ImageBbox: null,
+          sentinel1ImageMetadata: null,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: 'INVALID_COORDINATES: Coordinates outside valid ranges.',
+        }));
+      } else {
+        this.setState(() => ({
+          sentinel1ImageAvailable: false,
+          sentinel1ImageUrl: null,
+          sentinel1ImageBbox: null,
+          sentinel1ImageMetadata: null,
+          sentinel1ImageLoading: false,
+          sentinel1ImageError: imgRes.message || 'SAR image unavailable',
+        }));
+      }
+    } catch (err) {
+      console.warn('[POLARIS] Error syncing Sentinel-1 SAR image metadata:', err);
+      this.setState(() => ({
+        sentinel1ImageAvailable: false,
+        sentinel1ImageUrl: null,
+        sentinel1ImageBbox: null,
+        sentinel1ImageMetadata: null,
+        sentinel1ImageLoading: false,
+        sentinel1ImageError: 'PROCESSING_ERROR: Failed to fetch SAR image metadata',
+      }));
+    } finally {
+      this.sentinel1ImageSyncInProgress = false;
+    }
+  }
+
+  public setSentinel1Opacity(opacity: number) {
+    const clamped = Math.max(0.30, Math.min(0.90, opacity));
+    this.setState(() => ({ sentinel1Opacity: clamped }));
+  }
+
 
   public async simulateWhatIfScenario(scenarioType: BackendScenarioType, parameters?: BackendScenarioParameters) {
     this.setState(() => ({ isSimulatingWhatIf: true }));

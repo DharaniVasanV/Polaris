@@ -32,6 +32,8 @@ export interface MapLayerState {
   shortestRoute: boolean;
   researchStations: boolean;
   fleetVessels: boolean;
+  // Phase 10B: Sentinel-1 SAR observation layer
+  sentinel1Sar: boolean;
 }
 
 export interface PolarisAppState {
@@ -95,6 +97,18 @@ export interface PolarisAppState {
   sentinel1Status: 'CONNECTING' | 'ONLINE' | 'OFFLINE' | 'NOT_CONFIGURED' | 'NO_DATA';
   sentinel1Data: import('../services/sentinel1Service').Sentinel1StatusResponse | null;
   lastSentinel1Sync?: string;
+
+  // Phase 10B: Sentinel-1 SAR Image (Copernicus Sentinel Hub Process API)
+  sentinel1ImageAvailable: boolean;
+  sentinel1ImageUrl: string | null;       // Backend URL for the PNG image
+  sentinel1ImageBbox: {
+    min_lon: number; min_lat: number;
+    max_lon: number; max_lat: number;
+  } | null;
+  sentinel1ImageMetadata: import('../services/sentinel1Service').Sentinel1ImageMeta | null;
+  sentinel1ImageLoading: boolean;
+  sentinel1ImageError: string | null;
+  sentinel1Opacity: number;                // 0.30 - 0.90, default 0.70
 
   // What-If Scenario Simulation (Phase 7)
   activeWhatIfResult?: import('./scenario').BackendScenarioSimulateResponse | null;

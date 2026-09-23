@@ -41,7 +41,10 @@ class IcebergTrajectoryPredictor:
             raise FileNotFoundError(f"Metadata file not found: {self.metadata_path}")
 
         # Load Keras Model (compile=False for fast inference)
-        self.model = tf.keras.models.load_model(self.model_path, compile=False)
+        try:
+            self.model = tf.keras.models.load_model(self.model_path, compile=False)
+        except Exception:
+            self.model = self._load_model_compat(self.model_path)
 
         # Load Preprocessing Scaler
         self.scaler = joblib.load(self.scaler_path)
@@ -52,6 +55,44 @@ class IcebergTrajectoryPredictor:
 
         self.seq_len = self.metadata.get("sequence_length", SEQUENCE_LENGTH)
         self.features = self.metadata.get("features", ["lat", "lon", "delta_lat", "delta_lon"])
+
+    @staticmethod
+    def _load_model_compat(model_path: str):
+        """Fallback loader that strips incompatible Keras 3 kwargs (e.g., input_axes, quantization_config)."""
+        import zipfile
+        import tempfile
+        with zipfile.ZipFile(model_path, "r") as zin:
+            cfg = json.loads(zin.read("config.json").decode("utf-8"))
+            meta = zin.read("metadata.json")
+            weights = zin.read("model.weights.h5")
+
+        def clean_dict(d):
+            if isinstance(d, dict):
+                d.pop("quantization_config", None)
+                if d.get("class_name") == "GlorotUniform" and "config" in d:
+                    d["config"].pop("input_axes", None)
+                    d["config"].pop("output_axes", None)
+                for v in d.values():
+                    clean_dict(v)
+            elif isinstance(d, list):
+                for item in d:
+                    clean_dict(item)
+
+        clean_dict(cfg)
+        with tempfile.NamedTemporaryFile(suffix=".keras", delete=False) as tmp:
+            tmp_path = tmp.name
+        try:
+            with zipfile.ZipFile(tmp_path, "w", compression=zipfile.ZIP_DEFLATED) as zout:
+                zout.writestr("config.json", json.dumps(cfg))
+                zout.writestr("metadata.json", meta)
+                zout.writestr("model.weights.h5", weights)
+            return tf.keras.models.load_model(tmp_path, compile=False)
+        finally:
+            if os.path.exists(tmp_path):
+                try:
+                    os.remove(tmp_path)
+                except OSError:
+                    pass
 
     @staticmethod
     def _compute_delta_lon(lon_curr: float, lon_prev: float) -> float:
