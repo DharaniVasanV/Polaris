@@ -69,8 +69,8 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   // Basemap Provider Selection State
-  const [basemapSourceType, setBasemapSourceType] = useState<BasemapSourceType>('ESRI_POLAR_BASE');
-  const basemapProviderRef = useRef<AntarcticBasemapProvider>(new AntarcticBasemapProvider({ sourceType: 'ESRI_POLAR_BASE' }));
+  const [basemapSourceType, setBasemapSourceType] = useState<BasemapSourceType>('BAS_CARTOGRAPHIC_VECTOR');
+  const basemapProviderRef = useRef<AntarcticBasemapProvider>(new AntarcticBasemapProvider({ sourceType: 'BAS_CARTOGRAPHIC_VECTOR' }));
 
   // Compact Popover Controls UI State
   const [showLayerControls, setShowLayerControls] = useState<boolean>(false);
@@ -918,31 +918,31 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
             Antarctic Basemap Provider (EPSG:3031)
           </span>
           <button
-            onClick={() => handleSwitchBasemap('ESRI_POLAR_BASE')}
+            onClick={() => handleSwitchBasemap('BAS_CARTOGRAPHIC_VECTOR')}
             className={`p-2 rounded-lg text-left transition-colors flex items-center justify-between ${
-              basemapSourceType === 'ESRI_POLAR_BASE' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
+              basemapSourceType === 'BAS_CARTOGRAPHIC_VECTOR' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
             }`}
           >
-            <span>ESRI Polar Antarctic Base</span>
-            {basemapSourceType === 'ESRI_POLAR_BASE' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
+            <span>BAS Cartographic Vector (Default)</span>
+            {basemapSourceType === 'BAS_CARTOGRAPHIC_VECTOR' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
           </button>
           <button
-            onClick={() => handleSwitchBasemap('NASA_BLUE_MARBLE_BATHYMETRY')}
+            onClick={() => handleSwitchBasemap('NASA_GIBS_WMTS')}
             className={`p-2 rounded-lg text-left transition-colors flex items-center justify-between ${
-              basemapSourceType === 'NASA_BLUE_MARBLE_BATHYMETRY' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
+              basemapSourceType === 'NASA_GIBS_WMTS' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
             }`}
           >
-            <span>NASA GIBS Blue Marble Bathymetry</span>
-            {basemapSourceType === 'NASA_BLUE_MARBLE_BATHYMETRY' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
+            <span>NASA GIBS Blue Marble WMTS</span>
+            {basemapSourceType === 'NASA_GIBS_WMTS' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
           </button>
           <button
-            onClick={() => handleSwitchBasemap('BAS_CARTOGRAPHIC_TILE')}
+            onClick={() => handleSwitchBasemap('GBIF_POLAR_TILE')}
             className={`p-2 rounded-lg text-left transition-colors flex items-center justify-between ${
-              basemapSourceType === 'BAS_CARTOGRAPHIC_TILE' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
+              basemapSourceType === 'GBIF_POLAR_TILE' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
             }`}
           >
-            <span>BAS Cartographic Tiles</span>
-            {basemapSourceType === 'BAS_CARTOGRAPHIC_TILE' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
+            <span>GBIF Polar Tiles</span>
+            {basemapSourceType === 'GBIF_POLAR_TILE' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
           </button>
           <button
             onClick={() => handleSwitchBasemap('OFFLINE_VECTOR')}
