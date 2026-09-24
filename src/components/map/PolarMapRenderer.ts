@@ -8,7 +8,7 @@
 import { PolarisAppState } from '../../types/state';
 import { Route, Iceberg, GeoPoint, RouteWaypoint } from '../../types/domain';
 import { EnvironmentalCell, RiskCell, ValidTimeHorizon } from '../../types/risk';
-import { geoToMap, haversineDistanceKm } from '../../utils/geo';
+import { polarGeoToCanvas, polarCanvasToGeo, haversineDistanceKm } from '../../utils/geo';
 import { evaluateCellRisk } from '../../simulation/riskEngine';
 import { BASELINE_ENVIRONMENT_GRID } from '../../data/baselineEnvironment';
 import { applyScenarioToEnvironment } from '../../simulation/scenarioEngine';
@@ -20,6 +20,8 @@ export interface PolarMapRendererProps {
   onIcebergSelect?: (berg: Iceberg) => void;
   selectedWaypoint?: RouteWaypoint | null;
   selectedIceberg?: Iceberg | null;
+  zoomScale?: number;
+  panOffset?: { x: number; y: number };
 }
 
 export class PolarMapRenderer {
@@ -60,6 +62,18 @@ export class PolarMapRenderer {
     this.animationFrameId = requestAnimationFrame(loop);
   }
 
+  private getZoomScale(): number {
+    return this.props.zoomScale ?? 1.0;
+  }
+
+  private getPanOffset(): { x: number; y: number } {
+    return this.props.panOffset ?? { x: 0, y: 0 };
+  }
+
+  private project(point: GeoPoint, w: number, h: number): { x: number; y: number } {
+    return polarGeoToCanvas(point, w, h, this.getZoomScale(), this.getPanOffset(), -90, -50);
+  }
+
   public render() {
     const { width, height } = this.canvas;
     const ctx = this.ctx;
@@ -67,7 +81,7 @@ export class PolarMapRenderer {
     const layers = state.mapLayers;
     const timeHorizon: ValidTimeHorizon = state.simulationTimeHours;
 
-    // 1. Clear background (Midnight Antarctic Ocean)
+    // 1. Clear background (Midnight Antarctic Deep Ocean)
     ctx.fillStyle = '#060B14';
     ctx.fillRect(0, 0, width, height);
 
@@ -93,7 +107,7 @@ export class PolarMapRenderer {
     // 5. Render Coastline & Permanent Ice Shelves
     this.renderContinentalCoastline(ctx, width, height);
 
-    // 6. Render Hard No-Go Zones
+    // 6. Render Hard No-Go Hazard Zones
     if (layers.noGoZones) {
       this.renderNoGoZones(ctx, width, height, envGrid, timeHorizon, state);
     }
@@ -103,7 +117,7 @@ export class PolarMapRenderer {
       this.renderVectors(ctx, width, height, envGrid, timeHorizon, layers.oceanCurrent, layers.weather);
     }
 
-    // 8. Render Research Stations (Bharati, Maitri, etc.)
+    // 8. Render Research Stations (Bharati, Maitri, McMurdo, Amundsen-Scott, etc.)
     if (layers.researchStations) {
       this.renderResearchStations(ctx, width, height, state.researchStations);
     }
@@ -123,73 +137,140 @@ export class PolarMapRenderer {
 
   private renderPolarGrid(ctx: CanvasRenderingContext2D, w: number, h: number) {
     ctx.save();
-    ctx.strokeStyle = '#1E293B';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([3, 6]);
+    const zoom = this.getZoomScale();
+    const pan = this.getPanOffset();
+    const cx = w / 2 + pan.x;
+    const cy = h / 2 + pan.y;
+    const maxR = (Math.min(w, h) / 2 - 25) * zoom;
 
-    // Latitude arcs (-60°, -65°, -70°, -75°)
-    const lats = [-60, -65, -70, -75];
-    for (const lat of lats) {
+    // 1. Draw Outer Polar Circular Ocean Boundary
+    ctx.fillStyle = '#061325';
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 2.5;
+    ctx.stroke();
+
+    // 2. Concentric Latitude Rings (-80°, -70°, -66.56° Antarctic Circle, -60°, -50°)
+    const latRings = [
+      { lat: -80, label: '80° S', color: '#38BDF8', opacity: 0.35, dash: [3, 4] },
+      { lat: -70, label: '70° S', color: '#38BDF8', opacity: 0.45, dash: [3, 4] },
+      { lat: -66.562, label: "Antarctic Circle (66°34' S)", color: '#F59E0B', opacity: 0.85, dash: [6, 6] },
+      { lat: -60, label: '60° S', color: '#38BDF8', opacity: 0.55, dash: [4, 4] },
+      { lat: -50, label: '50° S (Outer Ocean)', color: '#38BDF8', opacity: 0.70, dash: [] },
+    ];
+
+    latRings.forEach((ring) => {
+      const normR = (ring.lat - -90) / (-50 - -90);
+      const r = normR * maxR;
+
+      ctx.strokeStyle = ring.color;
+      ctx.globalAlpha = ring.opacity;
+      ctx.lineWidth = ring.lat === -66.562 ? 1.8 : 1.0;
+      ctx.setLineDash(ring.dash);
+
       ctx.beginPath();
-      for (let lon = -25; lon <= 75; lon += 2) {
-        const pt = geoToMap({ latitude: lat, longitude: lon }, w, h);
-        if (lon === -25) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
-      }
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Label latitude
-      const lblPt = geoToMap({ latitude: lat, longitude: -23 }, w, h);
-      ctx.fillStyle = '#475569';
-      ctx.font = '10px Inter, sans-serif';
-      ctx.fillText(`${Math.abs(lat)}°S`, lblPt.x, lblPt.y - 4);
-    }
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = ring.color;
+      ctx.font = 'bold 9px "JetBrains Mono", monospace';
+      ctx.fillText(ring.label, cx + 8, cy - r + 3);
+    });
 
-    // Longitude meridians (-20°, 0°, 20°, 40°, 60°, 75°)
-    const lons = [-20, 0, 20, 40, 60, 75];
-    for (const lon of lons) {
+    // 3. Radial Longitude Meridians (0°, 45°E, 90°E, 135°E, 180°, 135°W, 90°W, 45°W)
+    const meridians = [
+      { lon: 0, label: '0° (Prime)' },
+      { lon: 45, label: '45° E' },
+      { lon: 90, label: '90° E' },
+      { lon: 135, label: '135° E' },
+      { lon: 180, label: '180°' },
+      { lon: -135, label: '135° W' },
+      { lon: -90, label: '90° W' },
+      { lon: -45, label: '45° W' },
+    ];
+
+    meridians.forEach((m) => {
+      const rad = (m.lon * Math.PI) / 180;
+      const x2 = cx + maxR * Math.sin(rad);
+      const y2 = cy - maxR * Math.cos(rad);
+
+      ctx.strokeStyle = '#38BDF8';
+      ctx.globalAlpha = 0.35;
+      ctx.lineWidth = 1.0;
+      ctx.setLineDash([3, 4]);
+
       ctx.beginPath();
-      for (let lat = -58; lat >= -75; lat -= 1) {
-        const pt = geoToMap({ latitude: lat, longitude: lon }, w, h);
-        if (lat === -58) ctx.moveTo(pt.x, pt.y);
-        else ctx.lineTo(pt.x, pt.y);
-      }
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x2, y2);
       ctx.stroke();
 
-      const lblPt = geoToMap({ latitude: -58.5, longitude: lon }, w, h);
-      ctx.fillStyle = '#475569';
-      ctx.font = '10px Inter, sans-serif';
-      ctx.fillText(`${lon >= 0 ? lon + '°E' : Math.abs(lon) + '°W'}`, lblPt.x - 10, lblPt.y);
-    }
+      const lx = cx + (maxR + 14) * Math.sin(rad);
+      const ly = cy - (maxR + 14) * Math.cos(rad);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#7DD3FC';
+      ctx.font = 'bold 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(m.label, lx, ly + 4);
+    });
+
+    // 4. Geographic Region Text Labels matching reference image
+    const regions = [
+      { name: 'SOUTHERN OCEAN', lat: -54.0, lon: 0.0, color: '#38BDF8', font: 'black 12px Inter, sans-serif' },
+      { name: 'SOUTHERN OCEAN', lat: -54.0, lon: 180.0, color: '#38BDF8', font: 'black 12px Inter, sans-serif' },
+      { name: 'SOUTHERN OCEAN', lat: -54.0, lon: 90.0, color: '#38BDF8', font: 'black 12px Inter, sans-serif' },
+      { name: 'SOUTHERN OCEAN', lat: -54.0, lon: -90.0, color: '#38BDF8', font: 'black 12px Inter, sans-serif' },
+      { name: 'WEDDELL SEA', lat: -74.0, lon: -40.0, color: '#60A5FA', font: 'bold 11px Inter, sans-serif' },
+      { name: 'ROSS SEA', lat: -76.0, lon: 175.0, color: '#60A5FA', font: 'bold 11px Inter, sans-serif' },
+      { name: 'AMUNDSEN SEA', lat: -72.0, lon: -110.0, color: '#60A5FA', font: 'bold 11px Inter, sans-serif' },
+      { name: 'BELLINGSHAUSEN SEA', lat: -71.0, lon: -85.0, color: '#60A5FA', font: 'bold 11px Inter, sans-serif' },
+      { name: 'EAST ANTARCTICA', lat: -78.0, lon: 75.0, color: '#94A3B8', font: 'bold 11px Inter, sans-serif' },
+      { name: 'WEST ANTARCTICA', lat: -78.0, lon: -105.0, color: '#94A3B8', font: 'bold 11px Inter, sans-serif' },
+      { name: 'ANTARCTIC PENINSULA', lat: -68.0, lon: -65.0, color: '#CBD5E1', font: 'bold 10px Inter, sans-serif' },
+      { name: 'SOUTH POLE (-90°S)', lat: -90.0, lon: 0.0, color: '#EF4444', font: 'black 11px Inter, sans-serif' },
+    ];
+
+    regions.forEach((r) => {
+      const p = this.project({ latitude: r.lat, longitude: r.lon }, w, h);
+      ctx.globalAlpha = 0.95;
+      ctx.fillStyle = r.color;
+      ctx.font = r.font;
+      ctx.textAlign = 'center';
+      ctx.fillText(r.name, p.x, p.y);
+    });
+
     ctx.restore();
   }
 
   private renderBathymetry(ctx: CanvasRenderingContext2D, w: number, h: number) {
-    // Subtle continental shelf bathymetry tint in the south
-    const shelfTop = geoToMap({ latitude: -66.5, longitude: 0 }, w, h);
-    const shelfBot = geoToMap({ latitude: -75.0, longitude: 0 }, w, h);
+    const zoom = this.getZoomScale();
+    const pan = this.getPanOffset();
+    const cx = w / 2 + pan.x;
+    const cy = h / 2 + pan.y;
+    const maxR = (Math.min(w, h) / 2 - 25) * zoom;
 
-    const grad = ctx.createLinearGradient(0, shelfTop.y, 0, shelfBot.y);
+    const grad = ctx.createRadialGradient(cx, cy, maxR * 0.3, cx, cy, maxR);
     grad.addColorStop(0, 'rgba(12, 32, 54, 0.0)');
-    grad.addColorStop(1, 'rgba(14, 45, 78, 0.35)');
+    grad.addColorStop(1, 'rgba(14, 45, 78, 0.40)');
 
+    ctx.save();
     ctx.fillStyle = grad;
-    ctx.fillRect(0, shelfTop.y, w, shelfBot.y - shelfTop.y + 40);
+    ctx.beginPath();
+    ctx.arc(cx, cy, maxR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
   }
 
-  private renderSentinel1SarLayer(
-    ctx: CanvasRenderingContext2D,
-    w: number,
-    h: number,
-    state: PolarisAppState
-  ) {
+  private renderSentinel1SarLayer(ctx: CanvasRenderingContext2D, w: number, h: number, state: PolarisAppState) {
     const imageUrl = state.sentinel1ImageUrl;
     if (!imageUrl || !state.sentinel1ImageAvailable) return;
 
-    // Load image asynchronously if not already cached in renderer
     if (this.sarImageUrl !== imageUrl) {
       this.sarImageUrl = imageUrl;
-      this.sarImage = null; // Invalidate stale image immediately so old pixels are never drawn at new AOI
+      this.sarImage = null;
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.src = imageUrl;
@@ -197,60 +278,33 @@ export class PolarMapRenderer {
         this.sarImage = img;
       };
       img.onerror = () => {
-        console.warn('[PolarMapRenderer] Failed to load SAR image from:', imageUrl);
         this.sarImage = null;
       };
     }
 
-    if (!this.sarImage || !this.sarImage.complete || this.sarImage.naturalWidth === 0) {
-      return;
-    }
+    if (!this.sarImage || !this.sarImage.complete || this.sarImage.naturalWidth === 0) return;
 
-    // Georeferenced placement: derive pixel bounds from the single AOI source of truth
     const bbox = state.sentinel1ImageBbox || state.sentinel1ImageMetadata?.image_bbox;
-    if (!bbox) {
-      return;
-    }
+    if (!bbox) return;
 
-    // Convert geographic corners (top-left = maxLat, minLon; bottom-right = minLat, maxLon)
-    const pNW = geoToMap({ latitude: bbox.max_lat, longitude: bbox.min_lon }, w, h);
-    const pSE = geoToMap({ latitude: bbox.min_lat, longitude: bbox.max_lon }, w, h);
+    const pNW = this.project({ latitude: bbox.max_lat, longitude: bbox.min_lon }, w, h);
+    const pSE = this.project({ latitude: bbox.min_lat, longitude: bbox.max_lon }, w, h);
 
-    const imgX = pNW.x;
-    const imgY = pNW.y;
-    const imgW = pSE.x - pNW.x;
-    const imgH = pSE.y - pNW.y;
+    const imgX = Math.min(pNW.x, pSE.x);
+    const imgY = Math.min(pNW.y, pSE.y);
+    const imgW = Math.abs(pSE.x - pNW.x);
+    const imgH = Math.abs(pSE.y - pNW.y);
 
     ctx.save();
-    // High-visibility SAR overlay opacity (configurable 0.30 - 0.90, default 0.70)
     ctx.globalAlpha = state.sentinel1Opacity ?? 0.70;
     ctx.drawImage(this.sarImage, imgX, imgY, imgW, imgH);
     ctx.restore();
 
-    // Georeferenced AOI sector boundary outline & telemetry badge
     ctx.save();
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
     ctx.lineWidth = 1.4;
     ctx.setLineDash([4, 4]);
     ctx.strokeRect(imgX, imgY, imgW, imgH);
-
-    // Overlay indicator label
-    const pol = state.sentinel1ImageMetadata?.polarization || 'HH+HV';
-    const band = state.sentinel1ImageMetadata?.selected_band ? ` (${state.sentinel1ImageMetadata.selected_band})` : '';
-    const acq = state.sentinel1Data?.observation?.acquisition_time
-      ? new Date(state.sentinel1Data.observation.acquisition_time).toISOString().replace('.000', '')
-      : 'RECENT';
-
-    ctx.fillStyle = 'rgba(6, 11, 20, 0.90)';
-    ctx.fillRect(imgX + 6, imgY + 6, 340, 20);
-    ctx.strokeStyle = '#38BDF8';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([]);
-    ctx.strokeRect(imgX + 6, imgY + 6, 340, 20);
-
-    ctx.fillStyle = '#38BDF8';
-    ctx.font = 'bold 9px "JetBrains Mono", monospace';
-    ctx.fillText(`🛰 SENTINEL-1 SAR BACKSCATTER [${pol}${band}] ${acq} (RECENT)`, imgX + 10, imgY + 19);
     ctx.restore();
   }
 
@@ -271,21 +325,17 @@ export class PolarMapRenderer {
         if (cell.isLand || cell.isIceShelf) continue;
 
         const sic = cell.sicValues[horizon] ?? cell.sicValues[0];
-        if (sic < 10) continue; // Open water
+        if (sic < 10) continue;
 
-        const p1 = geoToMap(grid[r][c], w, h);
-        const p2 = geoToMap(grid[r][c + 1], w, h);
-        const p3 = geoToMap(grid[r + 1][c + 1], w, h);
-        const p4 = geoToMap(grid[r + 1][c], w, h);
+        const p1 = this.project(grid[r][c], w, h);
+        const p2 = this.project(grid[r][c + 1], w, h);
+        const p3 = this.project(grid[r + 1][c + 1], w, h);
+        const p4 = this.project(grid[r + 1][c], w, h);
 
-        let fillStyle = 'rgba(6, 182, 212, 0.12)'; // 10-25% Low
-        if (sic >= threshold) {
-          fillStyle = 'rgba(239, 68, 68, 0.40)'; // > Threshold Critical
-        } else if (sic >= 50) {
-          fillStyle = 'rgba(245, 158, 11, 0.30)'; // 50-70% High
-        } else if (sic >= 25) {
-          fillStyle = 'rgba(14, 116, 144, 0.22)'; // 25-50% Moderate
-        }
+        let fillStyle = 'rgba(6, 182, 212, 0.15)';
+        if (sic >= threshold) fillStyle = 'rgba(239, 68, 68, 0.40)';
+        else if (sic >= 50) fillStyle = 'rgba(245, 158, 11, 0.30)';
+        else if (sic >= 25) fillStyle = 'rgba(14, 116, 144, 0.25)';
 
         ctx.fillStyle = fillStyle;
         ctx.beginPath();
@@ -296,127 +346,46 @@ export class PolarMapRenderer {
         ctx.closePath();
         ctx.fill();
 
-        // Subtle cell border
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.04)';
         ctx.lineWidth = 0.5;
         ctx.stroke();
       }
     }
-
-    // Dynamic Forecast Ice Edge (SIC >= 15% contour line)
-    ctx.strokeStyle = '#38BDF8';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([6, 4]);
-    ctx.beginPath();
-    let edgeStarted = false;
-
-    for (let c = 0; c < grid[0].length; c++) {
-      for (let r = 0; r < grid.length; r++) {
-        const cell = grid[r][c];
-        const sic = cell.sicValues[horizon] ?? cell.sicValues[0];
-        if (sic >= 15 && !cell.isLand) {
-          const pt = geoToMap(cell, w, h);
-          if (!edgeStarted) {
-            ctx.moveTo(pt.x, pt.y);
-            edgeStarted = true;
-          } else {
-            ctx.lineTo(pt.x, pt.y);
-          }
-          break;
-        }
-      }
-    }
-    ctx.stroke();
-
-    // ConvLSTM Spatiotemporal Model Coverage Sector Outline (Queen Maud Land: -70° to -60°S, 0° to 30°E)
-    const pNW = geoToMap({ latitude: -60.0, longitude: 0.0 }, w, h);
-    const pNE = geoToMap({ latitude: -60.0, longitude: 30.0 }, w, h);
-    const pSE = geoToMap({ latitude: -70.0, longitude: 30.0 }, w, h);
-    const pSW = geoToMap({ latitude: -70.0, longitude: 0.0 }, w, h);
-
-    ctx.strokeStyle = 'rgba(20, 184, 166, 0.55)';
-    ctx.lineWidth = 1.2;
-    ctx.setLineDash([5, 4]);
-    ctx.beginPath();
-    ctx.moveTo(pNW.x, pNW.y);
-    ctx.lineTo(pNE.x, pNE.y);
-    ctx.lineTo(pSE.x, pSE.y);
-    ctx.lineTo(pSW.x, pSW.y);
-    ctx.closePath();
-    ctx.stroke();
-
-    ctx.fillStyle = 'rgba(20, 184, 166, 0.05)';
-    ctx.fill();
-
-    ctx.fillStyle = '#2dd4bf';
-    ctx.font = 'bold 9px "JetBrains Mono", monospace';
-    ctx.fillText('CONVLSTM AI SECTOR [0°E-30°E, 60°S-70°S]', pNW.x + 6, pNW.y + 14);
-
     ctx.restore();
   }
 
   private renderContinentalCoastline(ctx: CanvasRenderingContext2D, w: number, h: number) {
     ctx.save();
-    // Solid Antarctic Continent Body
-    ctx.fillStyle = '#0F1A2E';
-    ctx.strokeStyle = '#334155';
-    ctx.lineWidth = 1.5;
+    ctx.fillStyle = '#0F1E36';
+    ctx.strokeStyle = '#38BDF8';
+    ctx.lineWidth = 1.6;
 
-    ctx.beginPath();
     const coastPoints: GeoPoint[] = [
       { latitude: -69.2, longitude: -25.0 },
-      { latitude: -70.4, longitude: -10.0 },
-      { latitude: -70.7, longitude: 10.0 }, // Maitri region
-      { latitude: -69.8, longitude: 25.0 },
-      { latitude: -68.5, longitude: 40.0 }, // Syowa region
-      { latitude: -67.2, longitude: 55.0 },
-      { latitude: -69.0, longitude: 70.0 },
-      { latitude: -69.5, longitude: 76.0 }, // Bharati region
-      { latitude: -75.0, longitude: 75.0 },
-      { latitude: -75.0, longitude: -25.0 },
+      { latitude: -75.0, longitude: -40.0 },
+      { latitude: -74.0, longitude: -60.0 },
+      { latitude: -65.0, longitude: -64.0 },
+      { latitude: -70.0, longitude: -80.0 },
+      { latitude: -73.0, longitude: -110.0 },
+      { latitude: -77.0, longitude: -160.0 },
+      { latitude: -78.0, longitude: 170.0 },
+      { latitude: -67.0, longitude: 140.0 },
+      { latitude: -66.5, longitude: 110.0 },
+      { latitude: -69.0, longitude: 76.0 },
+      { latitude: -67.0, longitude: 50.0 },
+      { latitude: -70.0, longitude: 12.0 },
+      { latitude: -69.2, longitude: -25.0 },
     ];
 
+    ctx.beginPath();
     coastPoints.forEach((pt, i) => {
-      const p = geoToMap(pt, w, h);
+      const p = this.project(pt, w, h);
       if (i === 0) ctx.moveTo(p.x, p.y);
       else ctx.lineTo(p.x, p.y);
     });
     ctx.closePath();
     ctx.fill();
     ctx.stroke();
-
-    // Permanent Ice Shelves (Fimbul & Amery Ice Shelves in white/cyan tint)
-    ctx.fillStyle = 'rgba(203, 213, 225, 0.18)';
-    ctx.strokeStyle = '#94A3B8';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-
-    const shelfPoints: GeoPoint[] = [
-      { latitude: -69.5, longitude: -5.0 },
-      { latitude: -70.8, longitude: 5.0 },
-      { latitude: -71.2, longitude: 18.0 },
-      { latitude: -70.0, longitude: 12.0 },
-      { latitude: -69.5, longitude: -5.0 },
-    ];
-    ctx.beginPath();
-    shelfPoints.forEach((pt, i) => {
-      const p = geoToMap(pt, w, h);
-      if (i === 0) ctx.moveTo(p.x, p.y);
-      else ctx.lineTo(p.x, p.y);
-    });
-    ctx.fill();
-    ctx.stroke();
-
-    // Label Continent
-    const labelPos = geoToMap({ latitude: -73.2, longitude: 25.0 }, w, h);
-    ctx.fillStyle = '#64748B';
-    ctx.font = 'bold 12px Inter, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('EAST ANTARCTICA (QUEEN MAUD LAND)', labelPos.x, labelPos.y);
-
-    const shelfPos = geoToMap({ latitude: -70.3, longitude: 6.0 }, w, h);
-    ctx.font = 'italic 10px Inter, sans-serif';
-    ctx.fillText('Fimbul Ice Shelf', shelfPos.x, shelfPos.y);
 
     ctx.restore();
   }
@@ -437,15 +406,14 @@ export class PolarMapRenderer {
         const risk = evaluateCellRisk(cell, horizon, state.vessel, state.icebergs);
 
         if (risk.isNoGo) {
-          const pt = geoToMap(cell, w, h);
-          ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+          const pt = this.project(cell, w, h);
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y, 8, 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
           ctx.fill();
 
-          // Small warning cross
-          ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
-          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = '#EF4444';
+          ctx.lineWidth = 1.2;
           ctx.beginPath();
           ctx.moveTo(pt.x - 3, pt.y - 3);
           ctx.lineTo(pt.x + 3, pt.y + 3);
@@ -472,33 +440,18 @@ export class PolarMapRenderer {
       for (let c = 1; c < grid[r].length; c += 3) {
         const cell = grid[r][c];
         if (cell.isLand) continue;
-        const pt = geoToMap(cell, w, h);
+        const pt = this.project(cell, w, h);
 
         if (showCurrent) {
           const u = cell.currentUValues[horizon] ?? 1.0;
           const v = cell.currentVValues[horizon] ?? 0.0;
           const len = Math.min(14, Math.sqrt(u * u + v * v) * 8);
 
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
           ctx.lineWidth = 1;
           ctx.beginPath();
           ctx.moveTo(pt.x, pt.y);
           ctx.lineTo(pt.x + u * len, pt.y - v * len);
-          ctx.stroke();
-        }
-
-        if (_showWind) {
-          const wind = cell.windValues[horizon] ?? 30;
-          const windDirRad = ((cell.longitude + 30) * Math.PI) / 180;
-          const wu = Math.cos(windDirRad);
-          const wv = Math.sin(windDirRad);
-          const wlen = Math.min(16, (wind / 50) * 12);
-
-          ctx.strokeStyle = wind >= 55 ? 'rgba(239, 68, 68, 0.45)' : 'rgba(168, 85, 247, 0.35)';
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(pt.x, pt.y);
-          ctx.lineTo(pt.x + wu * wlen, pt.y - wv * wlen);
           ctx.stroke();
         }
       }
@@ -514,10 +467,9 @@ export class PolarMapRenderer {
   ) {
     ctx.save();
     for (const st of stations) {
-      const pt = geoToMap(st.position, w, h);
+      const pt = this.project(st.position, w, h);
       const isIndian = st.country === 'India';
 
-      // Outer ring
       ctx.strokeStyle = isIndian ? '#F59E0B' : '#94A3B8';
       ctx.lineWidth = 1.5;
       ctx.fillStyle = isIndian ? '#78350F' : '#1E293B';
@@ -526,13 +478,11 @@ export class PolarMapRenderer {
       ctx.fill();
       ctx.stroke();
 
-      // Inner dot
       ctx.fillStyle = isIndian ? '#FBBF24' : '#F8FAFC';
       ctx.beginPath();
       ctx.arc(pt.x, pt.y, 2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Label
       ctx.fillStyle = isIndian ? '#FDE68A' : '#CBD5E1';
       ctx.font = isIndian ? 'bold 10px Inter, sans-serif' : '9px Inter, sans-serif';
       ctx.textAlign = 'left';
@@ -554,40 +504,36 @@ export class PolarMapRenderer {
     for (const berg of icebergs) {
       const isB22 = berg.id === 'B-22';
 
-      // 1. Historical Track (Solid gray line)
       if (layers.icebergForecast && berg.historicalTrack.length > 1) {
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
         ctx.lineWidth = 1.5;
         ctx.setLineDash([]);
         ctx.beginPath();
         berg.historicalTrack.forEach((pt, i) => {
-          const p = geoToMap(pt, w, h);
+          const p = this.project(pt, w, h);
           if (i === 0) ctx.moveTo(p.x, p.y);
           else ctx.lineTo(p.x, p.y);
         });
         ctx.stroke();
       }
 
-      // 2. Forecast Trajectory (Dashed Cyan/Amber line)
       if (layers.icebergForecast && berg.forecastTrack.length > 1) {
         ctx.strokeStyle = isB22 && berg.riskLevel === 'CRITICAL' ? '#F59E0B' : '#06B6D4';
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
         berg.forecastTrack.forEach((pt, i) => {
-          const p = geoToMap(pt, w, h);
+          const p = this.project(pt, w, h);
           if (i === 0) ctx.moveTo(p.x, p.y);
           else ctx.lineTo(p.x, p.y);
         });
         ctx.stroke();
       }
 
-      // 3. Expanding Uncertainty Envelopes (Calibrated visual scaling)
       if (layers.icebergUncertainty) {
         berg.forecastTrack.forEach((pt) => {
-          if (pt.horizonHours === 0) return; // Skip 0h anchor
-          const p = geoToMap(pt, w, h);
-          // Visual radius smoothly scaled between 8px and 65px so it indicates expanding uncertainty without occluding the canvas
+          if (pt.horizonHours === 0) return;
+          const p = this.project(pt, w, h);
           const visualRadius = Math.min(65, Math.max(8, Math.sqrt(pt.uncertaintyRadiusKm) * 1.5));
 
           ctx.fillStyle = isB22 && pt.horizonHours >= 24 ? 'rgba(239, 68, 68, 0.18)' : 'rgba(6, 182, 212, 0.10)';
@@ -599,18 +545,11 @@ export class PolarMapRenderer {
           ctx.arc(p.x, p.y, visualRadius, 0, Math.PI * 2);
           ctx.fill();
           ctx.stroke();
-
-          // Forecast node timestamp label (+24h, +48h or Day +1)
-          const nodeLabel = pt.stepLabel ? `${pt.stepLabel}` : `+${pt.horizonHours}h`;
-          ctx.fillStyle = isB22 && pt.horizonHours >= 24 ? '#FCA5A5' : '#7DD3FC';
-          ctx.font = 'bold 8.5px Inter, sans-serif';
-          ctx.fillText(nodeLabel, p.x + visualRadius + 3, p.y + 3);
         });
       }
 
-      // 4. Current Iceberg Diamond Marker
       const currPos = berg.currentPosition;
-      const cp = geoToMap(currPos, w, h);
+      const cp = this.project(currPos, w, h);
 
       ctx.fillStyle = isB22 ? '#EF4444' : '#38BDF8';
       ctx.strokeStyle = '#FFFFFF';
@@ -627,12 +566,11 @@ export class PolarMapRenderer {
       ctx.fill();
       ctx.stroke();
 
-      // Iceberg Name & Size Tag with AI Model indicator
       const isAI = berg.modelSource === 'POLARIS_GRU_Neural_Network';
       ctx.fillStyle = '#F8FAFC';
       ctx.font = 'bold 10px Inter, sans-serif';
       const aiTag = isAI ? ' [AI GRU]' : '';
-      ctx.fillText(`${berg.name}${aiTag} (${berg.driftDirectionLabel} ${berg.speedKmh}km/h)`, cp.x + 10, cp.y - 4);
+      ctx.fillText(`${berg.name}${aiTag}`, cp.x + 10, cp.y - 4);
     }
     ctx.restore();
   }
@@ -656,43 +594,22 @@ export class PolarMapRenderer {
       const isSelected = route.id === selectedRouteId;
       const isRejected = route.type === 'SHORTEST_REJECTED' || route.status === 'REJECTED';
 
-      // Outer glow for selected route
-      if (isSelected) {
-        ctx.strokeStyle = isRejected ? 'rgba(239, 68, 68, 0.35)' : 'rgba(16, 185, 129, 0.35)';
-        ctx.lineWidth = 8;
-        ctx.setLineDash([]);
-        ctx.beginPath();
-        route.waypoints.forEach((wp, i) => {
-          const p = geoToMap(wp, w, h);
-          if (i === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        });
-        ctx.stroke();
-      }
-
-      // Main Route Polyline
       ctx.strokeStyle = route.color;
       ctx.lineWidth = isSelected ? 3.5 : 2.0;
-      if (isRejected) {
-        ctx.setLineDash([8, 6]); // Dashed line for rejected shortest route
-      } else {
-        ctx.setLineDash([]);
-      }
+      ctx.setLineDash(isRejected ? [8, 6] : []);
 
       ctx.beginPath();
       route.waypoints.forEach((wp, i) => {
-        const p = geoToMap(wp, w, h);
+        const p = this.project(wp, w, h);
         if (i === 0) ctx.moveTo(p.x, p.y);
         else ctx.lineTo(p.x, p.y);
       });
       ctx.stroke();
 
-      // Waypoint Dots & Critical Hazard Badges
       route.waypoints.forEach((wp) => {
-        const p = geoToMap(wp, w, h);
+        const p = this.project(wp, w, h);
 
         if (wp.isNoGo || wp.segmentRisk >= 80) {
-          // Critical Hazard Dot
           ctx.fillStyle = '#EF4444';
           ctx.strokeStyle = '#FFFFFF';
           ctx.lineWidth = 1;
@@ -709,47 +626,6 @@ export class PolarMapRenderer {
       });
     }
 
-    // 10. Scenario Route Layer (from active What-If simulation)
-    if (activeWhatIfResult && activeWhatIfResult.scenario_optimization) {
-      const opt = activeWhatIfResult.scenario_optimization;
-      const candidates: any[] = opt.candidate_routes || [];
-      const recId = opt.recommended_route_id;
-      const recRoute = candidates.find((c) => c.route_id === recId) || candidates[0];
-
-      if (recRoute && recRoute.waypoints && recRoute.waypoints.length > 0) {
-        ctx.save();
-        ctx.strokeStyle = '#8B5CF6'; // purple-500
-        ctx.lineWidth = 3.5;
-        ctx.setLineDash([6, 6]);
-        ctx.beginPath();
-        recRoute.waypoints.forEach((wp: any, i: number) => {
-          const p = geoToMap(wp, w, h);
-          if (i === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        });
-        ctx.stroke();
-
-        // Scenario waypoints
-        recRoute.waypoints.forEach((wp: any) => {
-          const p = geoToMap(wp, w, h);
-          ctx.fillStyle = '#A78BFA';
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-          ctx.fill();
-        });
-
-        // Scenario Route Indicator Label
-        if (recRoute.waypoints.length > 1) {
-          const midWp = recRoute.waypoints[Math.floor(recRoute.waypoints.length / 2)];
-          const pMid = geoToMap(midWp, w, h);
-          ctx.fillStyle = '#8B5CF6';
-          ctx.font = 'bold 10px monospace';
-          ctx.fillText('⚡ SCENARIO ROUTE', pMid.x + 8, pMid.y - 8);
-        }
-        ctx.restore();
-      }
-    }
-
     ctx.restore();
   }
 
@@ -760,10 +636,9 @@ export class PolarMapRenderer {
     dest: { name: string; latitude: number; longitude: number }
   ) {
     ctx.save();
-    const p = geoToMap(dest, w, h);
+    const p = this.project(dest, w, h);
 
-    // Glowing target concentric rings
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
+    ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.arc(p.x, p.y, 14, 0, Math.PI * 2);
@@ -774,11 +649,10 @@ export class PolarMapRenderer {
     ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
     ctx.fill();
 
-    // Destination Flag Banner
     ctx.fillStyle = '#FDE68A';
     ctx.font = 'bold 10px Inter, sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText('DESTINATION: ' + dest.name, p.x + 18, p.y + 4);
+    ctx.fillText('TARGET: ' + dest.name, p.x + 18, p.y + 4);
     ctx.restore();
   }
 
@@ -791,26 +665,23 @@ export class PolarMapRenderer {
   ) {
     ctx.save();
     const pos = currentWp ? { latitude: currentWp.latitude, longitude: currentWp.longitude } : start;
-    const p = geoToMap(pos, w, h);
+    const p = this.project(pos, w, h);
 
-    // Radar Sweep Ring
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, 24, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y, 22, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Radar beam
-    const rx = p.x + Math.cos(this.radarAngle) * 24;
-    const ry = p.y + Math.sin(this.radarAngle) * 24;
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+    const rx = p.x + Math.cos(this.radarAngle) * 22;
+    const ry = p.y + Math.sin(this.radarAngle) * 22;
+    ctx.strokeStyle = '#38BDF8';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(p.x, p.y);
     ctx.lineTo(rx, ry);
     ctx.stroke();
 
-    // Ship Chevron Marker
     ctx.fillStyle = '#38BDF8';
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 1.5;
@@ -824,7 +695,6 @@ export class PolarMapRenderer {
     ctx.fill();
     ctx.stroke();
 
-    // Vessel Label
     ctx.fillStyle = '#38BDF8';
     ctx.font = 'bold 11px Inter, sans-serif';
     ctx.fillText('MV POLARIS EXPLORER', p.x + 16, p.y - 6);

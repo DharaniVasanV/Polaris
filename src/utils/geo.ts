@@ -1,6 +1,6 @@
 /**
  * POLARIS: Geographic & Polar Spatial Calculation Utilities
- * High-precision geodesic calculations and Antarctic Polar Projection math
+ * High-precision geodesic calculations and Antarctic Polar Stereographic Projection math
  */
 
 import { GeoPoint } from '../types/domain';
@@ -9,10 +9,10 @@ const EARTH_RADIUS_KM = 6371.0;
 const KM_TO_NM = 0.539957;
 
 export interface MapBounds {
-  minLat: number; // e.g. -76
-  maxLat: number; // e.g. -58
-  minLon: number; // e.g. -20
-  maxLon: number; // e.g. +70
+  minLat: number; // e.g. -90 (South Pole)
+  maxLat: number; // e.g. -50 (Outer Southern Ocean)
+  minLon: number; // e.g. -180
+  maxLon: number; // e.g. +180
 }
 
 /**
@@ -67,8 +67,74 @@ export function interpolatePosition(p1: GeoPoint, p2: GeoPoint, fraction: number
 }
 
 /**
- * Projects Geographic (Lat, Lon) to Antarctic Polar Canvas Coordinates (x, y)
- * Tailored for Southern Ocean Antarctic demonstration corridor
+ * True Circular Antarctic Polar Stereographic Projection (South Pole Centered)
+ * Projects Geographic (Lat, Lon) to 2D Circular Canvas (x, y)
+ * - Center of Circle: (cx, cy)
+ * - South Pole (-90°S) is placed at the exact center (cx, cy)
+ * - Outer boundary (-50°S) forms the outer circle edge of radius R
+ */
+export function polarGeoToCanvas(
+  point: GeoPoint,
+  canvasWidth: number,
+  canvasHeight: number,
+  zoomScale: number = 1.0,
+  panOffset: { x: number; y: number } = { x: 0, y: 0 },
+  minLat: number = -90,
+  maxLat: number = -50
+): { x: number; y: number } {
+  const cx = canvasWidth / 2 + panOffset.x;
+  const cy = canvasHeight / 2 + panOffset.y;
+  const maxRadius = (Math.min(canvasWidth, canvasHeight) / 2 - 25) * zoomScale;
+
+  // Clamp latitude to polar domain
+  const clampedLat = Math.min(maxLat, Math.max(minLat, point.latitude));
+  // Radius is proportional to distance from South Pole (-90)
+  const normRadius = (clampedLat - minLat) / (maxLat - minLat);
+  const r = normRadius * maxRadius;
+
+  // Convert longitude to radians (0° Meridian points straight UP)
+  const radLon = (point.longitude * Math.PI) / 180;
+  const x = cx + r * Math.sin(radLon);
+  const y = cy - r * Math.cos(radLon);
+
+  return { x, y };
+}
+
+/**
+ * Reverse transform from Canvas (x, y) to Geographic (Lat, Lon)
+ * for exact real-time mouse hover coordinate tracking
+ */
+export function polarCanvasToGeo(
+  x: number,
+  y: number,
+  canvasWidth: number,
+  canvasHeight: number,
+  zoomScale: number = 1.0,
+  panOffset: { x: number; y: number } = { x: 0, y: 0 },
+  minLat: number = -90,
+  maxLat: number = -50
+): GeoPoint {
+  const cx = canvasWidth / 2 + panOffset.x;
+  const cy = canvasHeight / 2 + panOffset.y;
+  const maxRadius = (Math.min(canvasWidth, canvasHeight) / 2 - 25) * zoomScale;
+
+  const dx = x - cx;
+  const dy = y - cy;
+  const r = Math.sqrt(dx * dx + dy * dy);
+
+  // Derive latitude
+  const normRadius = Math.min(1.0, r / maxRadius);
+  const latitude = minLat + normRadius * (maxLat - minLat);
+
+  // Derive longitude (-180 to +180)
+  let radLon = Math.atan2(dx, -dy);
+  let longitude = (radLon * 180) / Math.PI;
+
+  return { latitude, longitude };
+}
+
+/**
+ * Legacy compatibility alias for geoToMap
  */
 export function geoToMap(
   point: GeoPoint,
@@ -76,26 +142,11 @@ export function geoToMap(
   canvasHeight: number,
   bounds: MapBounds = { minLat: -76, maxLat: -58, minLon: -25, maxLon: 75 }
 ): { x: number; y: number } {
-  const pad = 40;
-  const usableWidth = canvasWidth - pad * 2;
-  const usableHeight = canvasHeight - pad * 2;
-
-  // Normalized bounds projection
-  const normX = (point.longitude - bounds.minLon) / (bounds.maxLon - bounds.minLon);
-  // Invert latitude: lower lat (e.g. -75°S) is further south (down)
-  const normY = (bounds.maxLat - point.latitude) / (bounds.maxLat - bounds.minLat);
-
-  // Apply subtle polar curvature distortion
-  const polarCurvature = Math.sin(normX * Math.PI) * 0.05 * (1 - normY);
-
-  const x = pad + normX * usableWidth;
-  const y = pad + (normY + polarCurvature) * usableHeight;
-
-  return { x, y };
+  return polarGeoToCanvas(point, canvasWidth, canvasHeight, 1.0, { x: 0, y: 0 }, bounds.minLat, bounds.maxLat);
 }
 
 /**
- * Reverse transforms Canvas (x, y) to Geographic (Lat, Lon)
+ * Legacy compatibility alias for mapToGeo
  */
 export function mapToGeo(
   x: number,
@@ -104,17 +155,7 @@ export function mapToGeo(
   canvasHeight: number,
   bounds: MapBounds = { minLat: -76, maxLat: -58, minLon: -25, maxLon: 75 }
 ): GeoPoint {
-  const pad = 40;
-  const usableWidth = canvasWidth - pad * 2;
-  const usableHeight = canvasHeight - pad * 2;
-
-  const normX = Math.max(0, Math.min(1, (x - pad) / usableWidth));
-  const normY = Math.max(0, Math.min(1, (y - pad) / usableHeight));
-
-  const longitude = bounds.minLon + normX * (bounds.maxLon - bounds.minLon);
-  const latitude = bounds.maxLat - normY * (bounds.maxLat - bounds.minLat);
-
-  return { latitude, longitude };
+  return polarCanvasToGeo(x, y, canvasWidth, canvasHeight, 1.0, { x: 0, y: 0 }, bounds.minLat, bounds.maxLat);
 }
 
 /**
@@ -128,7 +169,6 @@ export function pointToRouteDistanceKm(point: GeoPoint, route: GeoPoint[]): numb
     const p1 = route[i];
     const p2 = route[i + 1];
 
-    // Sample along segment for robust clearance check
     for (let f = 0; f <= 1.0; f += 0.1) {
       const interp = interpolatePosition(p1, p2, f);
       const dist = haversineDistanceKm(point, interp);
@@ -158,7 +198,6 @@ export function routeIntersectsCircle(
 
 /**
  * Calculates dynamic uncertainty radius based on forecast horizon
- * Deterministic prototype formula: +0h: 2km, +6h: 5km, +12h: 10km, +24h: 15km, +7D: 35km
  */
 export function calculateUncertaintyRadiusKm(horizonHours: number): number {
   if (horizonHours <= 0) return 2.0;
