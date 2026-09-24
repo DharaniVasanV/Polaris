@@ -22,6 +22,7 @@ import { applyScenarioToEnvironment } from '../../simulation/scenarioEngine';
 import { evaluateCellRisk } from '../../simulation/riskEngine';
 import { polarisStore } from '../../store/polarisStore';
 import { haversineDistanceNm, calculateBearing } from '../../utils/geo';
+import { AntarcticBasemapProvider, BasemapSourceType } from '../../services/basemapProvider';
 import { MapLayerControls } from './MapLayerControls';
 import { MapLegend } from './MapLegend';
 import {
@@ -35,6 +36,7 @@ import {
   Compass,
   Layers,
   HelpCircle,
+  Globe,
 } from 'lucide-react';
 
 // ─── Register EPSG:3031 (WGS 84 / Antarctic Polar Stereographic) ───────────
@@ -66,9 +68,14 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
   // Mouse Coordinate Readout HUD State (WGS84)
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lng: number } | null>(null);
 
+  // Basemap Provider Selection State
+  const [basemapSourceType, setBasemapSourceType] = useState<BasemapSourceType>('ESRI_POLAR_BASE');
+  const basemapProviderRef = useRef<AntarcticBasemapProvider>(new AntarcticBasemapProvider({ sourceType: 'ESRI_POLAR_BASE' }));
+
   // Compact Popover Controls UI State
   const [showLayerControls, setShowLayerControls] = useState<boolean>(false);
   const [showLegend, setShowLegend] = useState<boolean>(false);
+  const [showBasemapMenu, setShowBasemapMenu] = useState<boolean>(false);
 
   // Fullscreen state
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
@@ -80,8 +87,6 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
 
   // OpenLayers Vector & Image Sources
   const sourcesRef = useRef<{
-    oceanSource: VectorSource;
-    landSource: VectorSource;
     graticuleSource: VectorSource;
     seaIceSource: VectorSource;
     riskSource: VectorSource;
@@ -92,10 +97,9 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
     vesselSource: VectorSource;
     destinationSource: VectorSource;
     measureSource: VectorSource;
+    basemapLayer?: any;
     sarLayer?: ImageLayer<ImageStatic>;
   }>({
-    oceanSource: new VectorSource(),
-    landSource: new VectorSource(),
     graticuleSource: new VectorSource(),
     seaIceSource: new VectorSource(),
     riskSource: new VectorSource(),
@@ -121,23 +125,15 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
     return transform([x, y], 'EPSG:3031', 'EPSG:4326') as [number, number];
   };
 
-  // 1. Initialize OpenLayers Map with EPSG:3031 Cartographic View
+  // 1. Initialize OpenLayers Map with EPSG:3031 Projection
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     const sources = sourcesRef.current;
 
-    // Cartographic Ocean Background Layer (Z-Index 1)
-    const oceanLayer = new VectorLayer({
-      source: sources.oceanSource,
-      zIndex: 1,
-    });
-
-    // BAS Antarctic Continent Land & Ice Shelf Layer (Z-Index 2)
-    const landLayer = new VectorLayer({
-      source: sources.landSource,
-      zIndex: 2,
-    });
+    // Basemap Layer from AntarcticBasemapProvider
+    const basemapLayer = basemapProviderRef.current.createBasemapLayer();
+    sources.basemapLayer = basemapLayer;
 
     // EPSG:3031 Genuine Polar Graticule Layer (Z-Index 3)
     const graticuleLayer = new VectorLayer({
@@ -203,8 +199,7 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
     const map = new Map({
       target: mapContainerRef.current,
       layers: [
-        oceanLayer,
-        landLayer,
+        basemapLayer,
         graticuleLayer,
         seaIceLayer,
         riskLayer,
@@ -219,15 +214,12 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
       view: new View({
         projection: 'EPSG:3031',
         center: [0, 0], // South Pole [-90°S] is at exact visual center!
-        zoom: 1.85, // Calibrated so 60°S outer ring fills circular viewport!
+        zoom: 2.1, // Initial extent: 60°S to 90°S showing complete Antarctica
         minZoom: 1.0,
         maxZoom: 8.0,
       }),
       controls: [],
     });
-
-    // Render Ocean Boundary & BAS Antarctic Cartographic Continent
-    renderCartographicBasemap(sources.oceanSource, sources.landSource);
 
     // Render Genuine Geographic Graticules (Concentric Rings & Radial Spokes)
     renderPolarGraticule(sources.graticuleSource);
@@ -260,110 +252,20 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
     };
   }, []);
 
-  // ─── Function: Render BAS Cartographic Antarctic Basemap in EPSG:3031 ─────
-  const renderCartographicBasemap = (oceanSource: VectorSource, landSource: VectorSource) => {
-    oceanSource.clear();
-    landSource.clear();
+  // Handle Basemap Provider Switch
+  const handleSwitchBasemap = (type: BasemapSourceType) => {
+    setBasemapSourceType(type);
+    setShowBasemapMenu(false);
+    basemapProviderRef.current.setSourceType(type);
 
-    // 1. Deep Polar Ocean Boundary Polygon (Outer 50°S Ring)
-    const oceanRingPts: [number, number][] = [];
-    for (let lon = -180; lon <= 180; lon += 3) {
-      oceanRingPts.push(to3031(lon, -50));
+    const map = mapInstanceRef.current;
+    const sources = sourcesRef.current;
+    if (map && sources.basemapLayer) {
+      map.removeLayer(sources.basemapLayer);
+      const newBasemap = basemapProviderRef.current.createBasemapLayer();
+      map.getLayers().insertAt(0, newBasemap);
+      sources.basemapLayer = newBasemap;
     }
-
-    const oceanFeature = new Feature({
-      geometry: new Polygon([oceanRingPts]),
-    });
-    oceanFeature.setStyle(
-      new Style({
-        fill: new Fill({ color: '#061325' }), // Midnight Southern Ocean Blue
-      })
-    );
-    oceanSource.addFeature(oceanFeature);
-
-    // 2. High-Precision Antarctic Continent Shoreline Polygon (BAS Chart Geometry)
-    const antarcticGeoPoints: [number, number][] = [
-      [-25.0, -69.2], // Weddell Sea Coast
-      [-40.0, -75.0], // Filchner-Ronne Ice Shelf Base
-      [-60.0, -74.0],
-      [-64.0, -65.0], // Antarctic Peninsula Tip
-      [-80.0, -70.0], // Bellingshausen Sea
-      [-110.0, -73.0], // Amundsen Sea
-      [-160.0, -77.0], // Ross Ice Shelf Base
-      [170.0, -78.0], // Victoria Land / Ross Sea
-      [140.0, -67.0], // Terre Adélie
-      [110.0, -66.5], // Wilkes Land
-      [76.0, -69.0], // Prydz Bay / Bharati Base
-      [50.0, -67.0], // Enderby Land
-      [12.0, -70.0], // Dronning Maud Land / Maitri Base
-      [-25.0, -69.2], // Closing loop
-    ];
-
-    const poly3031 = antarcticGeoPoints.map(([lon, lat]) => to3031(lon, lat));
-    const landFeature = new Feature({
-      geometry: new Polygon([poly3031]),
-    });
-
-    // Pale Ice Blue / White Antarctic Continent Body matching BAS navigation charts
-    landFeature.setStyle(
-      new Style({
-        fill: new Fill({ color: 'rgba(224, 242, 254, 0.95)' }), // Crisp ice white/blue (#E0F2FE)
-        stroke: new Stroke({ color: '#0284C7', width: 2.2 }), // Dark navy coastline contour (#0284C7)
-      })
-    );
-    landSource.addFeature(landFeature);
-
-    // 3. Permanent Ice Shelves (Ronne-Filchner & Ross Ice Shelves)
-    const ronneShelfPts: [number, number][] = [
-      [-40.0, -75.0],
-      [-50.0, -78.0],
-      [-70.0, -78.0],
-      [-60.0, -74.0],
-      [-40.0, -75.0],
-    ];
-    const ronnePoly = ronneShelfPts.map(([lon, lat]) => to3031(lon, lat));
-    const ronneFeature = new Feature({
-      geometry: new Polygon([ronnePoly]),
-    });
-    ronneFeature.setStyle(
-      new Style({
-        fill: new Fill({ color: 'rgba(240, 249, 255, 0.85)' }),
-        stroke: new Stroke({ color: '#38BDF8', width: 1.4, lineDash: [4, 4] }),
-      })
-    );
-    landSource.addFeature(ronneFeature);
-
-    // 4. Regional Cartographic Geographic Labels
-    const labels = [
-      { text: 'EAST ANTARCTICA', lon: 75.0, lat: -78.0, color: '#1E293B', size: '13px' },
-      { text: 'WEST ANTARCTICA', lon: -105.0, lat: -78.0, color: '#1E293B', size: '13px' },
-      { text: 'ANTARCTIC PENINSULA', lon: -65.0, lat: -68.0, color: '#334155', size: '11px' },
-      { text: 'WEDDELL SEA', lon: -40.0, lat: -73.0, color: '#0284C7', size: '12px' },
-      { text: 'ROSS SEA', lon: 175.0, lat: -76.0, color: '#0284C7', size: '12px' },
-      { text: 'AMUNDSEN SEA', lon: -110.0, lat: -71.5, color: '#0284C7', size: '11px' },
-      { text: 'BELLINGSHAUSEN SEA', lon: -85.0, lat: -70.5, color: '#0284C7', size: '11px' },
-      { text: 'SOUTHERN OCEAN', lon: 0.0, lat: -56.0, color: '#38BDF8', size: '13px' },
-      { text: 'SOUTH POLE (-90°S)', lon: 0.0, lat: -90.0, color: '#EF4444', size: '12px' },
-    ];
-
-    labels.forEach((lbl) => {
-      const pt3031 = to3031(lbl.lon, lbl.lat);
-      const feat = new Feature({
-        geometry: new Point(pt3031),
-      });
-
-      feat.setStyle(
-        new Style({
-          text: new Text({
-            text: lbl.text,
-            font: `black ${lbl.size} "Inter", sans-serif`,
-            fill: new Fill({ color: lbl.color }),
-            stroke: new Stroke({ color: '#FFFFFF', width: 3 }),
-          }),
-        })
-      );
-      landSource.addFeature(feat);
-    });
   };
 
   // ─── Function: Render Genuine EPSG:3031 Polar Graticule ───────────────────
@@ -850,12 +752,12 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
   }, [state]);
 
   // Toolbar Actions
-  const handleZoomIn = () => mapInstanceRef.current?.getView().setZoom((mapInstanceRef.current?.getView().getZoom() || 1.85) + 0.4);
-  const handleZoomOut = () => mapInstanceRef.current?.getView().setZoom((mapInstanceRef.current?.getView().getZoom() || 1.85) - 0.4);
+  const handleZoomIn = () => mapInstanceRef.current?.getView().setZoom((mapInstanceRef.current?.getView().getZoom() || 2.1) + 0.4);
+  const handleZoomOut = () => mapInstanceRef.current?.getView().setZoom((mapInstanceRef.current?.getView().getZoom() || 2.1) - 0.4);
   const handleResetView = () => {
     mapInstanceRef.current?.getView().animate({
       center: [0, 0],
-      zoom: 1.85,
+      zoom: 2.1,
       duration: 800,
     });
   };
@@ -906,7 +808,7 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
   };
 
   return (
-    <div ref={wrapperRef} className="w-full h-full relative overflow-hidden bg-[#061325] flex items-center justify-center">
+    <div ref={wrapperRef} className="w-full h-full relative overflow-hidden bg-slate-950 flex items-center justify-center">
       {/* OpenLayers Map Canvas Container */}
       <div ref={mapContainerRef} className="w-full h-full z-0" style={{ width, height }} />
 
@@ -962,8 +864,25 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
       <div className="absolute top-4 right-4 z-[1000] flex gap-2">
         <button
           onClick={() => {
+            setShowBasemapMenu(!showBasemapMenu);
+            setShowLayerControls(false);
+            setShowLegend(false);
+          }}
+          className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xl backdrop-blur-md flex items-center gap-1.5 ${
+            showBasemapMenu
+              ? 'bg-sky-600 border-sky-400 text-white'
+              : 'bg-slate-900/90 border-slate-800 text-sky-400 hover:bg-slate-800/90'
+          }`}
+        >
+          <Globe className="w-3.5 h-3.5" />
+          <span>Basemap</span>
+        </button>
+
+        <button
+          onClick={() => {
             setShowLayerControls(!showLayerControls);
             setShowLegend(false);
+            setShowBasemapMenu(false);
           }}
           className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xl backdrop-blur-md flex items-center gap-1.5 ${
             showLayerControls
@@ -979,6 +898,7 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
           onClick={() => {
             setShowLegend(!showLegend);
             setShowLayerControls(false);
+            setShowBasemapMenu(false);
           }}
           className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xl backdrop-blur-md flex items-center gap-1.5 ${
             showLegend
@@ -990,6 +910,51 @@ export const OpenLayersPolarMap: React.FC<OpenLayersPolarMapProps> = ({
           <span>Legend</span>
         </button>
       </div>
+
+      {/* Popover Basemap Menu */}
+      {showBasemapMenu && (
+        <div className="absolute top-14 right-4 z-[1000] w-[260px] bg-slate-900/95 border border-slate-800 rounded-xl p-3 shadow-2xl backdrop-blur-md flex flex-col gap-2 text-xs">
+          <span className="font-bold text-slate-300 border-b border-slate-800 pb-1 uppercase text-[10px] tracking-wider">
+            Antarctic Basemap Provider (EPSG:3031)
+          </span>
+          <button
+            onClick={() => handleSwitchBasemap('ESRI_POLAR_BASE')}
+            className={`p-2 rounded-lg text-left transition-colors flex items-center justify-between ${
+              basemapSourceType === 'ESRI_POLAR_BASE' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
+            }`}
+          >
+            <span>ESRI Polar Antarctic Base</span>
+            {basemapSourceType === 'ESRI_POLAR_BASE' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
+          </button>
+          <button
+            onClick={() => handleSwitchBasemap('NASA_BLUE_MARBLE_BATHYMETRY')}
+            className={`p-2 rounded-lg text-left transition-colors flex items-center justify-between ${
+              basemapSourceType === 'NASA_BLUE_MARBLE_BATHYMETRY' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
+            }`}
+          >
+            <span>NASA GIBS Blue Marble Bathymetry</span>
+            {basemapSourceType === 'NASA_BLUE_MARBLE_BATHYMETRY' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
+          </button>
+          <button
+            onClick={() => handleSwitchBasemap('BAS_CARTOGRAPHIC_TILE')}
+            className={`p-2 rounded-lg text-left transition-colors flex items-center justify-between ${
+              basemapSourceType === 'BAS_CARTOGRAPHIC_TILE' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
+            }`}
+          >
+            <span>BAS Cartographic Tiles</span>
+            {basemapSourceType === 'BAS_CARTOGRAPHIC_TILE' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Active</span>}
+          </button>
+          <button
+            onClick={() => handleSwitchBasemap('OFFLINE_VECTOR')}
+            className={`p-2 rounded-lg text-left transition-colors flex items-center justify-between ${
+              basemapSourceType === 'OFFLINE_VECTOR' ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'
+            }`}
+          >
+            <span>Offline Mission Vector Mode</span>
+            {basemapSourceType === 'OFFLINE_VECTOR' && <span className="text-[9px] bg-sky-800 px-1.5 py-0.5 rounded">Offline</span>}
+          </button>
+        </div>
+      )}
 
       {/* Popover Layer Controls */}
       {showLayerControls && (
