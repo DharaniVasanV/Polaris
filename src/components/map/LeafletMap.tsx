@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
-import proj4 from 'proj4';
-import 'proj4leaflet';
 import { PolarisAppState, MapLayerState } from '../../types/state';
 import { BASELINE_ENVIRONMENT_GRID } from '../../data/baselineEnvironment';
 import { applyScenarioToEnvironment } from '../../simulation/scenarioEngine';
 import { evaluateCellRisk } from '../../simulation/riskEngine';
 import { polarisStore } from '../../store/polarisStore';
+import { haversineDistanceNm, haversineDistanceKm, calculateBearing } from '../../utils/geo';
 import {
   toLeafletLatLng,
   toLeafletLatLngs,
@@ -18,16 +17,17 @@ import {
 } from '../../utils/leafletHelpers';
 import { MapLayerControls } from './MapLayerControls';
 import { MapLegend } from './MapLegend';
-
-// ─── EPSG:3031 South Pole Stereographic Projection Setup ───────────────────
-const proj4def =
-  '+proj=stere +lat_0=-90 +lat_ts=-71 +lon_0=0 +k=1 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs';
-
-const crs3031 = new (L as any).Proj.CRS('EPSG:3031', proj4def, {
-  origin: [-4194304, 4194304],
-  resolutions: [32768, 16384, 8192, 4096, 2048, 1024, 512, 256, 128, 64],
-  bounds: L.bounds([-4194304, -4194304], [4194304, 4194304]),
-});
+import {
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Navigation,
+  Maximize2,
+  Minimize2,
+  Ruler,
+  Compass,
+  Layers,
+} from 'lucide-react';
 
 interface LeafletMapProps {
   state: PolarisAppState;
@@ -38,61 +38,76 @@ interface LeafletMapProps {
 export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', height = '100%' }) => {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
+  const wrapperRef = useRef<HTMLDivElement | null>(null);
 
-  // Real-time Mouse Coordinate Tracker state
+  // Real-time Mouse / Touch Coordinate Tracker state
   const [cursorCoords, setCursorCoords] = useState<{
     lat: number;
     lng: number;
-    distToSouthPoleKm: number;
-    distToVesselKm: number;
   } | null>(null);
 
-  // Layer groups references
+  // Measurement Tool state
+  const [isMeasuring, setIsMeasuring] = useState<boolean>(false);
+  const [measurePoints, setMeasurePoints] = useState<L.LatLng[]>([]);
+  const [measureDistanceNm, setMeasureDistanceNm] = useState<number>(0);
+
+  // Fullscreen state
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
+
+  // Layer groups references attached to strict Z-index panes
   const layerGroupsRef = useRef<{
     tileLayer?: L.TileLayer;
     graticuleGroup?: L.LayerGroup;
-    labelGroup?: L.LayerGroup;
     sarOverlay?: L.ImageOverlay;
     seaIceGroup?: L.LayerGroup;
     riskGroup?: L.LayerGroup;
     noGoGroup?: L.LayerGroup;
-    icebergGroup?: L.LayerGroup;
+    icebergTrackGroup?: L.LayerGroup;
+    uncertaintyGroup?: L.LayerGroup;
     routeGroup?: L.LayerGroup;
-    markerGroup?: L.LayerGroup;
+    vesselGroup?: L.LayerGroup;
+    destinationGroup?: L.LayerGroup;
+    measureGroup?: L.LayerGroup;
   }>({});
 
-  // 1. Initialize Leaflet Map Instance with EPSG:3031 Projection
+  const measurePointsRef = useRef<L.LatLng[]>([]);
+  measurePointsRef.current = measurePoints;
+
+  // 1. Initialize Leaflet Map Instance
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Initial Center: South Pole (-90°S) or Antarctic Corridor
-    const initialLat = state.departureLocation?.latitude ?? -70.0;
-    const initialLon = state.departureLocation?.longitude ?? 25.0;
+    // Single source of truth vessel coordinates
+    const vLat = state.departureLocation?.latitude ?? -66.5;
+    const vLon = state.departureLocation?.longitude ?? 25.0;
 
+    // Initial Center: Antarctic corridor centered at [-67.5, 25.0]
     const map = L.map(mapContainerRef.current, {
-      crs: crs3031,
-      center: [initialLat, initialLon],
-      zoom: 3,
-      minZoom: 1,
-      maxZoom: 10,
+      center: [-67.5, 25.0],
+      zoom: 4,
+      minZoom: 2,
+      maxZoom: 12,
       zoomControl: false,
       attributionControl: true,
+      worldCopyJump: true,
     });
 
-    // Add Zoom Control
-    L.control.zoom({ position: 'topleft' }).addTo(map);
-
-    // Create Custom Z-Index Panes for visual hierarchy
+    // Create Strict Visual Layer Order Panes (Z-Index Hierarchy)
+    // 1. Base Map (100) -> 2. Graticule (200) -> 3. Sentinel-1 (250) -> 4. Sea Ice (300)
+    // 5. Fused Risk (350) -> 6. NO-GO (400) -> 7. Iceberg Tracks (450) -> 8. Uncertainty (480)
+    // 9. Routes (500) -> 10. Vessel (600) -> 11. Destination/Stations (650)
     const panes = [
       { name: 'graticulePane', zIndex: 200 },
       { name: 'sarPane', zIndex: 250 },
       { name: 'seaIcePane', zIndex: 300 },
       { name: 'riskPane', zIndex: 350 },
       { name: 'noGoPane', zIndex: 400 },
-      { name: 'icebergPane', zIndex: 450 },
+      { name: 'icebergTrackPane', zIndex: 450 },
+      { name: 'uncertaintyPane', zIndex: 480 },
       { name: 'routePane', zIndex: 500 },
-      { name: 'markerPane', zIndex: 600 },
-      { name: 'labelPane', zIndex: 650 },
+      { name: 'vesselPane', zIndex: 600 },
+      { name: 'destinationPane', zIndex: 650 },
+      { name: 'measurePane', zIndex: 700 },
     ];
 
     panes.forEach(({ name, zIndex }) => {
@@ -100,65 +115,57 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
       pane.style.zIndex = zIndex.toString();
     });
 
-    // Basemap: Standard OpenStreetMap tile fallback with polar reprojection
-    const tileLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18,
-      attribution: '&copy; NASA GIBS / SCAR / OpenStreetMap',
+    // Base Tile Layer: High contrast Carto Light / Positron for scientific nautical display
+    const tileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      maxZoom: 19,
+      subdomains: 'abcd',
+      attribution: '&copy; CartoDB &copy; OpenStreetMap &copy; POLARIS Antarctic Command',
     }).addTo(map);
 
     // Initialize Layer Groups attached to specific panes
     const graticuleGroup = L.layerGroup([], { pane: 'graticulePane' }).addTo(map);
-    const labelGroup = L.layerGroup([], { pane: 'labelPane' }).addTo(map);
     const seaIceGroup = L.layerGroup([], { pane: 'seaIcePane' }).addTo(map);
     const riskGroup = L.layerGroup([], { pane: 'riskPane' }).addTo(map);
     const noGoGroup = L.layerGroup([], { pane: 'noGoPane' }).addTo(map);
-    const icebergGroup = L.layerGroup([], { pane: 'icebergPane' }).addTo(map);
+    const icebergTrackGroup = L.layerGroup([], { pane: 'icebergTrackPane' }).addTo(map);
+    const uncertaintyGroup = L.layerGroup([], { pane: 'uncertaintyPane' }).addTo(map);
     const routeGroup = L.layerGroup([], { pane: 'routePane' }).addTo(map);
-    const markerGroup = L.layerGroup([], { pane: 'markerPane' }).addTo(map);
+    const vesselGroup = L.layerGroup([], { pane: 'vesselPane' }).addTo(map);
+    const destinationGroup = L.layerGroup([], { pane: 'destinationPane' }).addTo(map);
+    const measureGroup = L.layerGroup([], { pane: 'measurePane' }).addTo(map);
 
     layerGroupsRef.current = {
       tileLayer,
       graticuleGroup,
-      labelGroup,
       seaIceGroup,
       riskGroup,
       noGoGroup,
-      icebergGroup,
+      icebergTrackGroup,
+      uncertaintyGroup,
       routeGroup,
-      markerGroup,
+      vesselGroup,
+      destinationGroup,
+      measureGroup,
     };
 
-    // Render Antarctic Polar Graticule (Circles & Meridians)
-    renderAntarcticGraticule(graticuleGroup, labelGroup);
+    // Render Geographic Lat/Lon Graticule Lines & Labels
+    renderGeographicGraticule(graticuleGroup);
 
-    // Real-Time Mouse Move Coordinate Tracker
+    // Continuous Mouse Move Coordinate Readout
     map.on('mousemove', (e: L.LeafletMouseEvent) => {
-      const lat = e.latlng.lat;
-      const lng = e.latlng.lng;
-
-      // Calculate distance to South Pole (-90, 0) in Km using haversine formula
-      const distToSouthPoleKm = Math.abs(lat - (-90)) * 111.139;
-
-      // Calculate distance to active vessel
-      const vLat = state.departureLocation?.latitude ?? -66.5;
-      const vLon = state.departureLocation?.longitude ?? 25.0;
-      const dLat = (lat - vLat) * (Math.PI / 180);
-      const dLon = (lng - vLon) * (Math.PI / 180);
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(vLat * (Math.PI / 180)) *
-          Math.cos(lat * (Math.PI / 180)) *
-          Math.sin(dLon / 2) *
-          Math.sin(dLon / 2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      const distToVesselKm = 6371 * c;
-
       setCursorCoords({
-        lat,
-        lng,
-        distToSouthPoleKm,
-        distToVesselKm,
+        lat: e.latlng.lat,
+        lng: e.latlng.lng,
       });
+    });
+
+    // Click handler for Measurement Tool
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      if ((window as any).__polaris_measuring) {
+        const newPts = [...measurePointsRef.current, e.latlng];
+        setMeasurePoints(newPts);
+        renderMeasurementTool(measureGroup, newPts);
+      }
     });
 
     mapInstanceRef.current = map;
@@ -175,105 +182,109 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
     };
   }, []);
 
-  // ─── Function to Render Concentric Polar Graticule (Lat/Lon Rings) ────────
-  const renderAntarcticGraticule = (graticuleGroup: L.LayerGroup, labelGroup: L.LayerGroup) => {
+  // ─── Function: Geographic Lat/Lon Graticule Lines & Dynamic Labels ────────
+  const renderGeographicGraticule = (graticuleGroup: L.LayerGroup) => {
     graticuleGroup.clearLayers();
-    labelGroup.clearLayers();
 
-    // 1. Concentric Latitude Rings (60°S, 70°S, 80°S, Antarctic Circle 66.56°S)
-    const latRings = [
-      { lat: -60, label: '60° S', dash: undefined, color: '#38BDF8', opacity: 0.5, weight: 1.5 },
-      { lat: -66.562, label: "Antarctic Circle (66°34' S)", dash: '6,6', color: '#F59E0B', opacity: 0.8, weight: 2 },
-      { lat: -70, label: '70° S', dash: undefined, color: '#38BDF8', opacity: 0.4, weight: 1 },
-      { lat: -80, label: '80° S', dash: undefined, color: '#38BDF8', opacity: 0.4, weight: 1 },
-    ];
-
-    latRings.forEach((ring) => {
-      const circlePts: [number, number][] = [];
+    // Latitudes: 60°S, 65°S, 70°S, 75°S, 80°S, 85°S
+    const latitudes = [-60, -65, -70, -75, -80, -85];
+    latitudes.forEach((lat) => {
+      const linePts: [number, number][] = [];
       for (let lon = -180; lon <= 180; lon += 2) {
-        circlePts.push([ring.lat, lon]);
+        linePts.push([lat, lon]);
       }
 
-      const poly = L.polyline(circlePts, {
-        color: ring.color,
-        weight: ring.weight,
-        dashArray: ring.dash,
-        opacity: ring.opacity,
+      const isCircle = lat === -65 || lat === -66.5;
+      const poly = L.polyline(linePts, {
+        color: isCircle ? '#0284C7' : '#0369A1',
+        weight: isCircle ? 1.4 : 0.9,
+        dashArray: isCircle ? '6,4' : '3,4',
+        opacity: 0.65,
         interactive: false,
       });
       graticuleGroup.addLayer(poly);
 
-      // Add text label along ring
-      const labelMarker = L.marker([ring.lat, 0], {
-        icon: L.divIcon({
-          className: 'bg-transparent text-[10px] font-bold font-mono tracking-widest text-sky-400 drop-shadow',
-          html: `<span style="color: ${ring.color}; opacity: 0.9;">${ring.label}</span>`,
-          iconSize: [120, 20],
-          iconAnchor: [-10, 10],
-        }),
-        interactive: false,
+      // Latitude label at meridian intersections
+      [-20, 0, 25, 50, 75].forEach((lLon) => {
+        const lblMarker = L.marker([lat, lLon], {
+          icon: L.divIcon({
+            className: 'bg-transparent text-[10px] font-bold font-mono text-sky-700 drop-shadow-sm',
+            html: `<span>${Math.abs(lat)}°S</span>`,
+            iconSize: [45, 16],
+            iconAnchor: [20, 8],
+          }),
+          interactive: false,
+        });
+        graticuleGroup.addLayer(lblMarker);
       });
-      labelGroup.addLayer(labelMarker);
     });
 
-    // 2. Radial Longitude Meridians (0°, 90°E, 180°, 90°W, etc.)
-    const meridians = [0, 45, 90, 135, 180, -135, -90, -45];
-    meridians.forEach((lon) => {
-      const linePts: [number, number][] = [
-        [-90, lon],
-        [-50, lon],
-      ];
+    // Longitudes: 0°, 30°E, 60°E, 90°E, 120°E, 150°E, 180°, 30°W, 60°W, 90°W, 120°W, 150°W
+    const longitudes = [0, 30, 60, 90, 120, 150, 180, -150, -120, -90, -60, -30];
+    longitudes.forEach((lon) => {
+      const linePts: [number, number][] = [];
+      for (let lat = -55; lat >= -88; lat -= 1) {
+        linePts.push([lat, lon]);
+      }
 
       const poly = L.polyline(linePts, {
-        color: '#38BDF8',
-        weight: 1,
-        dashArray: '3,3',
-        opacity: 0.35,
+        color: '#0369A1',
+        weight: 0.9,
+        dashArray: '3,4',
+        opacity: 0.55,
         interactive: false,
       });
       graticuleGroup.addLayer(poly);
 
-      const lonLabel = lon === 0 ? '0° (Prime)' : lon === 180 ? '180°' : lon > 0 ? `${lon}° E` : `${Math.abs(lon)}° W`;
-      const labelMarker = L.marker([-55, lon], {
+      const lonStr = lon === 0 ? '0°' : lon === 180 ? '180°' : lon > 0 ? `${lon}°E` : `${Math.abs(lon)}°W`;
+      const lblMarker = L.marker([-58, lon], {
         icon: L.divIcon({
-          className: 'bg-transparent text-[10px] font-bold font-mono text-cyan-300 drop-shadow',
-          html: `<span>${lonLabel}</span>`,
-          iconSize: [60, 20],
-          iconAnchor: [30, 10],
+          className: 'bg-transparent text-[10px] font-bold font-mono text-sky-800 drop-shadow-sm',
+          html: `<span>${lonStr}</span>`,
+          iconSize: [50, 16],
+          iconAnchor: [25, 8],
         }),
         interactive: false,
       });
-      labelGroup.addLayer(labelMarker);
+      graticuleGroup.addLayer(lblMarker);
     });
+  };
 
-    // 3. Geographic Region Text Labels matching reference image
-    const regions = [
-      { name: 'SOUTHERN OCEAN', lat: -58.0, lon: 0.0, color: '#38BDF8', size: 'text-sm font-black' },
-      { name: 'SOUTHERN OCEAN', lat: -58.0, lon: 180.0, color: '#38BDF8', size: 'text-sm font-black' },
-      { name: 'SOUTHERN OCEAN', lat: -58.0, lon: 90.0, color: '#38BDF8', size: 'text-sm font-black' },
-      { name: 'SOUTHERN OCEAN', lat: -58.0, lon: -90.0, color: '#38BDF8', size: 'text-sm font-black' },
-      { name: 'WEDDELL SEA', lat: -74.0, lon: -40.0, color: '#60A5FA', size: 'text-xs font-bold' },
-      { name: 'ROSS SEA', lat: -76.0, lon: 175.0, color: '#60A5FA', size: 'text-xs font-bold' },
-      { name: 'AMUNDSEN SEA', lat: -72.0, lon: -110.0, color: '#60A5FA', size: 'text-xs font-bold' },
-      { name: 'BELLINGSHAUSEN SEA', lat: -71.0, lon: -85.0, color: '#60A5FA', size: 'text-xs font-bold' },
-      { name: 'EAST ANTARCTICA', lat: -78.0, lon: 75.0, color: '#94A3B8', size: 'text-xs font-bold' },
-      { name: 'WEST ANTARCTICA', lat: -78.0, lon: -105.0, color: '#94A3B8', size: 'text-xs font-bold' },
-      { name: 'ANTARCTIC PENINSULA', lat: -68.0, lon: -65.0, color: '#CBD5E1', size: 'text-[11px] font-bold' },
-      { name: 'SOUTH POLE (-90°S)', lat: -90.0, lon: 0.0, color: '#EF4444', size: 'text-xs font-black' },
-    ];
+  // ─── Function: Render Measurement Tool Polylines & Markers ────────────────
+  const renderMeasurementTool = (measureGroup: L.LayerGroup, pts: L.LatLng[]) => {
+    measureGroup.clearLayers();
+    if (pts.length === 0) return;
 
-    regions.forEach((r) => {
-      const regMarker = L.marker([r.lat, r.lon], {
-        icon: L.divIcon({
-          className: `bg-transparent font-sans tracking-widest uppercase drop-shadow-md whitespace-nowrap ${r.size}`,
-          html: `<span style="color: ${r.color}; opacity: 0.9;">${r.name}</span>`,
-          iconSize: [180, 24],
-          iconAnchor: [90, 12],
-        }),
-        interactive: false,
+    // Draw markers
+    pts.forEach((pt, idx) => {
+      const marker = L.circleMarker(pt, {
+        radius: 5,
+        color: '#D97706',
+        fillColor: '#F59E0B',
+        fillOpacity: 0.9,
       });
-      labelGroup.addLayer(regMarker);
+      marker.bindTooltip(`Point ${idx + 1}`, { permanent: true, direction: 'top' });
+      measureGroup.addLayer(marker);
     });
+
+    if (pts.length > 1) {
+      const poly = L.polyline(pts, {
+        color: '#D97706',
+        weight: 3,
+        dashArray: '6,6',
+      });
+      measureGroup.addLayer(poly);
+
+      // Compute total distance
+      let totNm = 0;
+      for (let i = 0; i < pts.length - 1; i++) {
+        totNm += haversineDistanceNm(
+          { latitude: pts[i].lat, longitude: pts[i].lng },
+          { latitude: pts[i + 1].lat, longitude: pts[i + 1].lng }
+        );
+      }
+      setMeasureDistanceNm(totNm);
+    }
   };
 
   // 2. Render / Update All Layers on State Changes
@@ -286,7 +297,9 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
     const timeHorizon = state.simulationTimeHours;
     const envGrid = applyScenarioToEnvironment(BASELINE_ENVIRONMENT_GRID, state.activeScenario);
 
-    // LAYER A: Sentinel-1 SAR Raster Overlay
+    // ─────────────────────────────────────────────────────────────────────────
+    // LAYER 3: Sentinel-1 SAR Raster Overlay (Georeferenced to AOI)
+    // ─────────────────────────────────────────────────────────────────────────
     if (groups.sarOverlay) {
       map.removeLayer(groups.sarOverlay);
       groups.sarOverlay = undefined;
@@ -302,12 +315,31 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
           interactive: true,
         }).addTo(map);
 
+        const pol = state.sentinel1ImageMetadata?.polarization || 'HH+HV';
+        const acq = state.sentinel1Data?.observation?.acquisition_time
+          ? new Date(state.sentinel1Data.observation.acquisition_time).toISOString().replace('.000', '')
+          : 'RECENT';
+
+        sarOverlay.bindPopup(`
+          <div class="p-1 font-sans text-xs">
+            <div class="font-bold text-sky-600 font-mono flex items-center gap-1">
+              <span>🛰 Sentinel-1 SAR Backscatter</span>
+            </div>
+            <div class="text-[11px] text-slate-700 mt-1">Polarization: ${pol}</div>
+            <div class="text-[11px] text-slate-700">Acquisition: ${acq} (RECENT)</div>
+            <div class="text-[10px] text-slate-500 mt-0.5">Georeferenced Sentinel Hub SAR Raster</div>
+          </div>
+        `);
+
         groups.sarOverlay = sarOverlay;
       }
     }
 
-    // LAYER B: Sea-Ice Concentration Grid & Hard NO-GO Zones
+    // ─────────────────────────────────────────────────────────────────────────
+    // LAYER 4 & 5: Sea-Ice Concentration Grid & Fused Risk Heatmap Polygons
+    // ─────────────────────────────────────────────────────────────────────────
     groups.seaIceGroup.clearLayers();
+    groups.riskGroup?.clearLayers();
     groups.noGoGroup?.clearLayers();
 
     if (layers.seaIce || layers.noGoZones) {
@@ -321,6 +353,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
           const sic = cell.sicValues[timeHorizon] ?? cell.sicValues[0];
           const risk = evaluateCellRisk(cell, timeHorizon, state.vessel, state.icebergs);
 
+          // Real Leaflet Geographic Cell Rectangle Bounds
           const cellPolygonBounds: [number, number][] = [
             toLeafletLatLng(envGrid[r][c]),
             toLeafletLatLng(envGrid[r][c + 1]),
@@ -328,37 +361,46 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
             toLeafletLatLng(envGrid[r + 1][c]),
           ];
 
+          // ───────────────────────────────────────────────────────────────────
+          // LAYER 6: NO-GO Safety Engine Hazard Cells (Transparent Dark Red)
+          // ───────────────────────────────────────────────────────────────────
           if (layers.noGoZones && risk.isNoGo) {
             const noGoPolygon = L.polygon(cellPolygonBounds, {
               pane: 'noGoPane',
-              color: '#EF4444',
+              color: '#DC2626',
               weight: 1.5,
               fillColor: '#EF4444',
-              fillOpacity: 0.30,
-              dashArray: '3,3',
+              fillOpacity: 0.35,
+              dashArray: '4,4',
             });
+
+            const hazardReason = risk.noGoReason || 'EXCESSIVE SEA ICE / HARD HAZARD';
             noGoPolygon.bindTooltip(
-              `NO-GO HAZARD ZONE | Cell [${r},${c}] | SIC: ${sic.toFixed(0)}% | Risk: ${risk.totalRisk.toFixed(0)}/100`,
+              `<b>⛔ NO-GO HAZARD ZONE</b><br/>Cell [${r},${c}]<br/>Hazard: ${hazardReason}<br/>SIC: ${sic.toFixed(0)}% | Risk Score: ${risk.totalRisk.toFixed(0)}/100`,
               { sticky: true }
             );
             groups.noGoGroup?.addLayer(noGoPolygon);
           }
 
-          if (layers.seaIce && sic >= 10) {
-            let fillColor = 'rgba(6, 182, 212, 0.15)';
-            let fillOpacity = 0.35;
+          // Fused Risk Heatmap Polygons (Green -> Yellow -> Orange -> Red)
+          if (layers.seaIce) {
+            let fillColor = 'rgba(16, 185, 129, 0.18)'; // Green (Safe < 30)
+            let fillOpacity = 0.22;
 
-            if (sic >= threshold) {
-              fillColor = 'rgba(239, 68, 68, 0.40)';
-            } else if (sic >= 50) {
-              fillColor = 'rgba(245, 158, 11, 0.30)';
-            } else if (sic >= 25) {
-              fillColor = 'rgba(14, 116, 144, 0.25)';
+            if (risk.totalRisk >= 70 || sic >= threshold) {
+              fillColor = 'rgba(239, 68, 68, 0.38)'; // Critical Red (>= 70)
+              fillOpacity = 0.35;
+            } else if (risk.totalRisk >= 50 || sic >= 50) {
+              fillColor = 'rgba(249, 115, 22, 0.30)'; // Orange High (50-70)
+              fillOpacity = 0.28;
+            } else if (risk.totalRisk >= 30 || sic >= 25) {
+              fillColor = 'rgba(245, 158, 11, 0.25)'; // Yellow Moderate (30-50)
+              fillOpacity = 0.24;
             }
 
             const icePolygon = L.polygon(cellPolygonBounds, {
               pane: 'seaIcePane',
-              color: 'rgba(255, 255, 255, 0.05)',
+              color: 'rgba(15, 23, 42, 0.08)',
               weight: 0.5,
               fillColor,
               fillOpacity,
@@ -369,7 +411,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
             });
 
             icePolygon.bindTooltip(
-              `Sea Ice: ${sic.toFixed(1)}% | Cell [${r},${c}] (Lat: ${cell.latitude.toFixed(2)}°, Lon: ${cell.longitude.toFixed(2)}°)`,
+              `Sea Ice: ${sic.toFixed(1)}% | Risk: ${risk.totalRisk.toFixed(0)}/100 | Cell [${r},${c}] (Lat: ${cell.latitude.toFixed(2)}°, Lon: ${cell.longitude.toFixed(2)}°)`,
               { sticky: true }
             );
 
@@ -379,62 +421,88 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
       }
     }
 
-    // LAYER C: Icebergs, Tracks & Uncertainty Corridors
-    groups.icebergGroup?.clearLayers();
+    // ─────────────────────────────────────────────────────────────────────────
+    // LAYER 7 & 8: Icebergs, Historical/Predicted Tracks & Uncertainty Circles
+    // ─────────────────────────────────────────────────────────────────────────
+    groups.icebergTrackGroup?.clearLayers();
+    groups.uncertaintyGroup?.clearLayers();
 
-    if (layers.icebergs && groups.icebergGroup) {
+    if (layers.icebergs && groups.icebergTrackGroup && groups.uncertaintyGroup) {
       state.icebergs.forEach((berg) => {
         const isB22 = berg.id === 'B-22';
         const isCritical = berg.riskLevel === 'CRITICAL';
 
+        // Historical Track Line (Solid gray)
         if (layers.icebergForecast && berg.historicalTrack.length > 1) {
           const histLine = L.polyline(toLeafletLatLngs(berg.historicalTrack), {
-            pane: 'icebergPane',
-            color: '#94A3B8',
-            weight: 1.5,
-            opacity: 0.6,
+            pane: 'icebergTrackPane',
+            color: '#64748B',
+            weight: 1.8,
+            opacity: 0.7,
           });
-          groups.icebergGroup?.addLayer(histLine);
+          groups.icebergTrackGroup?.addLayer(histLine);
         }
 
+        // Forecast Trajectory Line (+24h, Dashed cyan/amber)
         if (layers.icebergForecast && berg.forecastTrack.length > 1) {
           const fcstLine = L.polyline(toLeafletLatLngs(berg.forecastTrack), {
-            pane: 'icebergPane',
-            color: isCritical ? '#F59E0B' : '#06B6D4',
-            weight: 2,
-            dashArray: '4,4',
-            opacity: 0.85,
+            pane: 'icebergTrackPane',
+            color: isCritical ? '#D97706' : '#0284C7',
+            weight: 2.2,
+            dashArray: '5,5',
+            opacity: 0.9,
           });
-          groups.icebergGroup?.addLayer(fcstLine);
+          groups.icebergTrackGroup?.addLayer(fcstLine);
         }
 
+        // Expanding Uncertainty Circles (Real Lat/Lon geographic radius in meters)
         if (layers.icebergUncertainty) {
           berg.forecastTrack.forEach((pt) => {
             if (pt.horizonHours === 0) return;
             const radiusMeters = (pt.uncertaintyRadiusKm || 5) * 1000;
             const circle = L.circle(toLeafletLatLng(pt), {
-              pane: 'icebergPane',
+              pane: 'uncertaintyPane',
               radius: radiusMeters,
-              color: isB22 && pt.horizonHours >= 24 ? '#EF4444' : '#06B6D4',
-              fillColor: isB22 && pt.horizonHours >= 24 ? '#EF4444' : '#06B6D4',
-              fillOpacity: 0.12,
-              weight: 1,
-              dashArray: '2,3',
+              color: isB22 && pt.horizonHours >= 24 ? '#DC2626' : '#0284C7',
+              fillColor: isB22 && pt.horizonHours >= 24 ? '#EF4444' : '#38BDF8',
+              fillOpacity: 0.14,
+              weight: 1.2,
+              dashArray: '3,3',
             });
-            groups.icebergGroup?.addLayer(circle);
+
+            circle.bindTooltip(
+              `Forecast +${pt.horizonHours}h: ${berg.name} (Uncertainty Radius: ${pt.uncertaintyRadiusKm.toFixed(1)} km)`,
+              { sticky: true }
+            );
+
+            groups.uncertaintyGroup?.addLayer(circle);
           });
         }
 
+        // Current Iceberg Diamond Marker
         const bergMarker = L.marker(toLeafletLatLng(berg.currentPosition), {
-          pane: 'icebergPane',
+          pane: 'icebergTrackPane',
           icon: createIcebergDivIcon(isCritical, berg.name),
         });
 
-        groups.icebergGroup?.addLayer(bergMarker);
+        const isAI = berg.modelSource === 'POLARIS_GRU_Neural_Network';
+        bergMarker.bindPopup(`
+          <div class="p-1.5 font-sans text-xs">
+            <div class="font-bold text-sky-800 font-mono text-sm">${berg.name}</div>
+            <div class="text-slate-700 mt-1">Risk Level: <span class="font-bold text-amber-600">${berg.riskLevel}</span></div>
+            <div class="text-slate-700">Drift: ${berg.driftDirectionLabel} @ ${berg.speedKmh} km/h</div>
+            <div class="text-slate-700">Dimensions: ${berg.lengthKm}x${berg.widthKm} km</div>
+            <div class="text-[10px] text-sky-700 mt-1 font-mono">${isAI ? '🤖 POLARIS GRU Neural Forecast Engine' : 'Observed Satellite Data'}</div>
+          </div>
+        `);
+
+        groups.icebergTrackGroup?.addLayer(bergMarker);
       });
     }
 
-    // LAYER D: Navigation Routes
+    // ─────────────────────────────────────────────────────────────────────────
+    // LAYER 9: Navigation Routes (Recommended, Alternative, Shortest, Counterfactual)
+    // ─────────────────────────────────────────────────────────────────────────
     groups.routeGroup?.clearLayers();
 
     if (groups.routeGroup) {
@@ -446,19 +514,19 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
         const isSelected = route.id === state.selectedRouteId;
         const isRejected = route.type === 'SHORTEST_REJECTED' || route.status === 'REJECTED';
 
-        let color = route.color || '#06B6D4';
+        let color = '#0284C7';
         let weight = isSelected ? 5.5 : 3.5;
         let dashArray: string | undefined = undefined;
 
         if (route.type === 'SAFE_A') {
-          color = '#06B6D4';
+          color = '#0284C7'; // Cyan/Blue Recommended Route
           weight = 6;
         } else if (route.type === 'ALTERNATIVE_B') {
-          color = '#F59E0B';
+          color = '#D97706'; // Amber Alternative Route
           dashArray = '6,6';
           weight = 4;
         } else if (isRejected) {
-          color = '#64748B';
+          color = '#64748B'; // Gray Shortest Route
           dashArray = '4,4';
           weight = 3;
         }
@@ -475,49 +543,162 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
           polarisStore.selectRoute(route.id);
         });
 
+        const distNm = route.metrics?.totalDistanceNm ?? 0;
+        routeLine.bindTooltip(
+          `<b>${route.title}</b><br/>Distance: ${distNm.toFixed(0)} NM<br/>Status: ${route.status}`,
+          { sticky: true }
+        );
+
         groups.routeGroup?.addLayer(routeLine);
       });
+
+      // Counterfactual Route Layer (What-If Scenario Active)
+      if (state.activeWhatIfResult?.scenario_optimization?.candidate_routes) {
+        const opt = state.activeWhatIfResult.scenario_optimization;
+        const candidates: any[] = opt.candidate_routes || [];
+        const recRoute = candidates.find((c) => c.route_id === opt.recommended_route_id) || candidates[0];
+
+        if (recRoute && recRoute.waypoints && recRoute.waypoints.length > 0) {
+          const scenarioLine = L.polyline(toLeafletLatLngs(recRoute.waypoints), {
+            pane: 'routePane',
+            color: '#7C3AED', // Purple Counterfactual Route
+            weight: 4.5,
+            dashArray: '6,6',
+            opacity: 0.95,
+          });
+
+          scenarioLine.bindTooltip(
+            `<b>⚡ WHAT-IF SCENARIO COUNTERFACTUAL ROUTE</b><br/>Optimized under ${state.activeScenario?.title || 'Scenario'}`,
+            { sticky: true }
+          );
+
+          groups.routeGroup?.addLayer(scenarioLine);
+        }
+      }
     }
 
-    // LAYER E: Vessel, Destination & Research Stations
-    groups.markerGroup?.clearLayers();
+    // ─────────────────────────────────────────────────────────────────────────
+    // LAYER 10 & 11: Vessel, Destination & Research Base Station Markers
+    // ─────────────────────────────────────────────────────────────────────────
+    groups.vesselGroup?.clearLayers();
+    groups.destinationGroup?.clearLayers();
 
-    if (groups.markerGroup) {
+    if (groups.vesselGroup && groups.destinationGroup) {
+      // Single Source of Truth Vessel Coordinates
+      const vLat = state.departureLocation?.latitude ?? -66.5;
+      const vLon = state.departureLocation?.longitude ?? 25.0;
+      const heading = (state.vessel as any).headingDegrees ?? 45;
+
+      // Prominent Vessel Marker
+      const vesselMarker = L.marker([vLat, vLon], {
+        pane: 'vesselPane',
+        icon: createVesselDivIcon(heading),
+      });
+
+      vesselMarker.bindTooltip(
+        `<div class="font-mono text-xs"><b>VESSEL</b><br/>${vLat.toFixed(2)}°, ${vLon.toFixed(2)}°<br/><span class="text-[9px] text-amber-700">MANUAL / SIMULATED VESSEL POSITION</span></div>`,
+        { permanent: true, direction: 'top', offset: [0, -20] }
+      );
+
+      vesselMarker.bindPopup(`
+        <div class="p-1.5 font-sans text-xs">
+          <div class="font-bold text-sky-800 font-mono text-sm">MV POLARIS EXPLORER</div>
+          <div class="text-slate-700 mt-1">Ice Class: <span class="font-bold text-emerald-700">${state.vessel.iceClass}</span></div>
+          <div class="text-slate-700 font-mono">Position: ${vLat.toFixed(4)}°S, ${vLon.toFixed(4)}°E</div>
+          <div class="text-slate-700">Speed: ${state.vessel.nominalSpeedKnots} knots | Heading: ${heading}°</div>
+          <div class="text-[10px] font-bold text-amber-800 bg-amber-100 border border-amber-300 rounded px-1.5 py-0.5 mt-1 inline-block">
+            MANUAL / SIMULATED VESSEL POSITION
+          </div>
+        </div>
+      `);
+
+      groups.vesselGroup.addLayer(vesselMarker);
+
+      // Destination Target Base Station Marker
       if (state.destinationLocation) {
-        const destMarker = L.marker(toLeafletLatLng(state.destinationLocation), {
-          pane: 'markerPane',
+        const dLat = state.destinationLocation.latitude;
+        const dLon = state.destinationLocation.longitude;
+
+        const destMarker = L.marker([dLat, dLon], {
+          pane: 'destinationPane',
           icon: createDestinationDivIcon(),
         });
-        groups.markerGroup.addLayer(destMarker);
+
+        const distNm = haversineDistanceNm({ latitude: vLat, longitude: vLon }, { latitude: dLat, longitude: dLon });
+        const bearing = calculateBearing({ latitude: vLat, longitude: vLon }, { latitude: dLat, longitude: dLon });
+
+        destMarker.bindPopup(`
+          <div class="p-1.5 font-sans text-xs">
+            <div class="font-bold text-amber-700 font-mono text-sm">DESTINATION TARGET</div>
+            <div class="text-slate-800 mt-1 font-bold">${state.destinationLocation.name}</div>
+            <div class="text-slate-700 font-mono">Lat: ${dLat.toFixed(4)}°, Lon: ${dLon.toFixed(4)}°</div>
+            <div class="text-slate-700 mt-0.5">Distance from Vessel: <b>${distNm.toFixed(0)} NM</b> (${(distNm * 1.852).toFixed(0)} km)</div>
+            <div class="text-slate-700">Initial Bearing: <b>${bearing.toFixed(0)}°</b></div>
+          </div>
+        `);
+
+        groups.destinationGroup.addLayer(destMarker);
       }
 
-      if (state.departureLocation) {
-        const heading = (state.vessel as any).headingDegrees ?? 45;
-        const vesselMarker = L.marker(toLeafletLatLng(state.departureLocation), {
-          pane: 'markerPane',
-          icon: createVesselDivIcon(heading),
-        });
-        groups.markerGroup.addLayer(vesselMarker);
-      }
-
+      // Research Base Stations (Maitri, Bharati, Amundsen-Scott, McMurdo, Rothera, Halley)
       if (layers.researchStations && state.researchStations) {
         state.researchStations.forEach((st) => {
           const isIndian = st.country === 'India';
           const stMarker = L.marker(toLeafletLatLng(st.position), {
-            pane: 'markerPane',
+            pane: 'destinationPane',
             icon: createStationDivIcon(isIndian),
           });
-          groups.markerGroup?.addLayer(stMarker);
+
+          stMarker.bindPopup(`
+            <div class="p-1.5 font-sans text-xs">
+              <div class="font-bold ${isIndian ? 'text-amber-700' : 'text-slate-800'} font-mono">${st.name} Base Station</div>
+              <div class="text-slate-700">Country: ${st.country}</div>
+              <div class="text-slate-700">Access Risk: <span class="font-bold">${st.accessRiskLevel}</span></div>
+            </div>
+          `);
+
+          groups.destinationGroup?.addLayer(stMarker);
         });
       }
     }
   }, [state]);
 
+  // Toolbar Actions
+  const handleZoomIn = () => mapInstanceRef.current?.zoomIn();
+  const handleZoomOut = () => mapInstanceRef.current?.zoomOut();
+  const handleResetView = () => mapInstanceRef.current?.flyTo([-67.5, 25.0], 4);
+  const handleLocateVessel = () => {
+    const vLat = state.departureLocation?.latitude ?? -66.5;
+    const vLon = state.departureLocation?.longitude ?? 25.0;
+    mapInstanceRef.current?.flyTo([vLat, vLon], 6);
+  };
+
+  const handleToggleFullscreen = () => {
+    if (!wrapperRef.current) return;
+    if (!document.fullscreenElement) {
+      wrapperRef.current.requestFullscreen();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const handleToggleMeasure = () => {
+    const nextVal = !isMeasuring;
+    setIsMeasuring(nextVal);
+    (window as any).__polaris_measuring = nextVal;
+    if (!nextVal) {
+      setMeasurePoints([]);
+      setMeasureDistanceNm(0);
+      layerGroupsRef.current.measureGroup?.clearLayers();
+    }
+  };
+
   const handleToggleLayer = (layerKey: keyof MapLayerState) => {
     polarisStore.toggleMapLayer(layerKey);
   };
 
-  // Helper to format degrees/minutes/seconds
   const formatDms = (deg: number, isLat: boolean) => {
     const absDeg = Math.abs(deg);
     const d = Math.floor(absDeg);
@@ -528,78 +709,116 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({ state, width = '100%', h
   };
 
   return (
-    <div className="w-full h-full relative overflow-hidden bg-[#060B14]">
-      {/* Real Leaflet Polar Stereographic Map Container */}
+    <div ref={wrapperRef} className="w-full h-full relative overflow-hidden bg-slate-900 flex items-center justify-center">
+      {/* Real Leaflet Map Viewport */}
       <div ref={mapContainerRef} className="w-full h-full z-0" style={{ width, height }} />
 
-      {/* Real-Time Interactive Cursor Lat/Lon Tracker HUD */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 border border-sky-500/40 rounded-xl p-3 shadow-2xl backdrop-blur-md font-mono text-xs text-slate-200 flex flex-col gap-1 min-w-[280px]">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 mb-1">
-          <span className="font-bold text-sky-400 uppercase tracking-wider text-[10px]">
-            🌐 Antarctic EPSG:3031 Coordinate HUD
+      {/* Map Control Toolbar (Top-Left) */}
+      <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-1.5 bg-white/95 border border-slate-300 rounded-xl p-1.5 shadow-xl backdrop-blur-md">
+        <button
+          onClick={handleZoomIn}
+          title="Zoom In"
+          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+        >
+          <ZoomIn className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          title="Zoom Out"
+          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+        >
+          <ZoomOut className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleResetView}
+          title="Reset to Antarctic View"
+          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-sky-700 transition-colors"
+        >
+          <RotateCcw className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleLocateVessel}
+          title="Locate Vessel"
+          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-emerald-700 transition-colors"
+        >
+          <Navigation className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleToggleMeasure}
+          title="Distance Measurement Tool"
+          className={`p-2 rounded-lg transition-colors ${
+            isMeasuring ? 'bg-amber-500 text-white' : 'bg-slate-100 hover:bg-slate-200 text-amber-700'
+          }`}
+        >
+          <Ruler className="w-4 h-4" />
+        </button>
+        <button
+          onClick={handleToggleFullscreen}
+          title="Toggle Fullscreen"
+          className="p-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+        >
+          {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+        </button>
+      </div>
+
+      {/* Measurement Tool Active HUD */}
+      {isMeasuring && (
+        <div className="absolute top-4 left-16 z-[1000] bg-amber-900/90 border border-amber-500 rounded-xl px-3 py-1.5 text-white font-mono text-xs shadow-xl backdrop-blur-md flex items-center gap-3">
+          <span>📏 Measuring: <b>{measureDistanceNm.toFixed(1)} NM</b> ({(measureDistanceNm * 1.852).toFixed(1)} km)</span>
+          <button
+            onClick={() => {
+              setMeasurePoints([]);
+              setMeasureDistanceNm(0);
+              layerGroupsRef.current.measureGroup?.clearLayers();
+            }}
+            className="text-[10px] bg-amber-700 hover:bg-amber-600 px-2 py-0.5 rounded font-bold"
+          >
+            Clear
+          </button>
+        </div>
+      )}
+
+      {/* Continuous Live Coordinate Readout HUD (Bottom Bar) */}
+      <div className="absolute bottom-4 left-4 z-[1000] bg-white/95 border border-slate-300 rounded-xl p-3 shadow-xl backdrop-blur-md font-mono text-xs text-slate-800 flex flex-col gap-1 min-w-[280px]">
+        <div className="flex items-center justify-between border-b border-slate-200 pb-1 mb-1">
+          <span className="font-bold text-sky-800 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+            <Compass className="w-3.5 h-3.5 text-sky-700" />
+            Antarctic Navigation Display
           </span>
-          <span className="text-[9px] bg-sky-950 text-sky-300 px-1.5 py-0.5 rounded border border-sky-600/30">
-            POLAR STEREOGRAPHIC
+          <span className="text-[9px] bg-sky-100 text-sky-800 px-1.5 py-0.5 rounded font-bold border border-sky-300">
+            WGS84 GEOGRAPHIC
           </span>
         </div>
 
         {cursorCoords ? (
           <>
             <div className="flex justify-between items-center text-[11px]">
-              <span className="text-slate-400">Position:</span>
-              <span className="font-bold text-cyan-300">
+              <span className="text-slate-500 font-sans">Latitude:</span>
+              <span className="font-bold text-sky-900">{Math.abs(cursorCoords.lat).toFixed(2)}°S</span>
+            </div>
+
+            <div className="flex justify-between items-center text-[11px]">
+              <span className="text-slate-500 font-sans">Longitude:</span>
+              <span className="font-bold text-sky-900">
+                {cursorCoords.lng >= 0 ? `${cursorCoords.lng.toFixed(2)}°E` : `${Math.abs(cursorCoords.lng).toFixed(2)}°W`}
+              </span>
+            </div>
+
+            <div className="flex justify-between items-center text-[10px] text-slate-500 border-t border-slate-200 pt-1 mt-0.5">
+              <span>DMS Coordinates:</span>
+              <span className="text-slate-700 font-bold">
                 {formatDms(cursorCoords.lat, true)}, {formatDms(cursorCoords.lng, false)}
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-[10px] text-slate-400">
-              <span>Decimal Coords:</span>
-              <span className="text-slate-300">
-                {cursorCoords.lat.toFixed(4)}°, {cursorCoords.lng.toFixed(4)}°
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-[10px] text-slate-400">
-              <span>Distance to South Pole:</span>
-              <span className="text-amber-300 font-bold">
-                {cursorCoords.distToSouthPoleKm.toFixed(0)} km
-              </span>
-            </div>
-
-            <div className="flex justify-between items-center text-[10px] text-slate-400">
-              <span>Distance to Vessel:</span>
-              <span className="text-emerald-400 font-bold">
-                {cursorCoords.distToVesselKm.toFixed(0)} km
               </span>
             </div>
           </>
         ) : (
-          <div className="text-slate-400 text-center py-1 text-[11px]">
-            Hover mouse over map for coordinates & distances
+          <div className="text-slate-500 text-center py-1 text-[11px]">
+            Hover mouse over map for continuous Lat/Lon readout
           </div>
         )}
-
-        {/* Dynamic Scale Bar matching reference image (>1000 km ocean span) */}
-        <div className="mt-1 pt-1.5 border-t border-slate-800 flex flex-col gap-1">
-          <div className="flex justify-between text-[9px] text-slate-400 font-bold">
-            <span>0</span>
-            <span>200</span>
-            <span>400</span>
-            <span>600</span>
-            <span>800</span>
-            <span>1000+ Km</span>
-          </div>
-          <div className="w-full h-1.5 bg-slate-800 rounded flex overflow-hidden border border-slate-700">
-            <div className="w-1/5 bg-sky-400" />
-            <div className="w-1/5 bg-slate-900" />
-            <div className="w-1/5 bg-sky-400" />
-            <div className="w-1/5 bg-slate-900" />
-            <div className="w-1/5 bg-amber-400" />
-          </div>
-        </div>
       </div>
 
-      {/* Layer Controls Component */}
+      {/* Map Layer Controls Component */}
       <MapLayerControls
         layers={state.mapLayers}
         onToggleLayer={handleToggleLayer}
