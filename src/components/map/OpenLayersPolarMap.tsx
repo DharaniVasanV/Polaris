@@ -11,7 +11,7 @@ import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
 import Polygon from 'ol/geom/Polygon';
 import CircleGeom from 'ol/geom/Circle';
-import { Style, Stroke, Fill, Circle as CircleStyle, Text } from 'ol/style';
+import { Style, Stroke, Fill, Circle as CircleStyle, Text, RegularShape } from 'ol/style';
 import { register } from 'ol/proj/proj4';
 import { get as getProjection, transform } from 'ol/proj';
 import proj4 from 'proj4';
@@ -128,7 +128,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     // just the raster data boundary showing the container background color.
     // Fix: add a solid Southern Ocean color rectangle covering the full viewport
     // extent at z-index 0 so every pixel has the correct geographic ocean color.
-    const OCEAN_COLOR = '#C4DDE8';
+    const OCEAN_COLOR = '#DCEAF0'; // Light Antarctic ocean blue-gray (user spec)
     const OCEAN_HALF = 6000000;
     const oceanRect = new Feature({
       geometry: new Polygon([[
@@ -394,15 +394,16 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           });
         }
 
-        // Iceberg position marker — small 5-7px
+        // Iceberg position marker — diamond (RegularShape 4-point)
         const f = new Feature({ geometry: new Point(to3031(berg.currentPosition.longitude, berg.currentPosition.latitude)) });
         f.setStyle(new Style({
-          image: new CircleStyle({
+          image: new RegularShape({
+            points: 4,
             radius: isB22 ? 7 : 5,
+            angle: Math.PI / 4,  // rotated 45° = diamond orientation
             fill: new Fill({ color: isB22 ? '#EF4444' : '#22D3EE' }),
             stroke: new Stroke({ color: 'rgba(255,255,255,0.80)', width: 1.5 }),
           }),
-          // Only label B-22 by default; others unlabeled unless zoomed in
           text: isB22 ? new Text({
             text: berg.name,
             font: '9px "Inter",sans-serif',
@@ -453,23 +454,25 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       }
     }
 
-    // ── Vessel (small, clean) ──────────────────────────────────────────────
+    // ── Vessel (triangle RegularShape, small & precise) ──────────────────────
     s.vessel.clear();
     const vLat = state.departureLocation?.latitude ?? -63.0;
     const vLon = state.departureLocation?.longitude ?? 0.0;
     const vf = new Feature({ geometry: new Point(to3031(vLon, vLat)) });
     vf.setStyle(new Style({
-      image: new CircleStyle({
-        radius: 8,
+      image: new RegularShape({
+        points: 3,       // triangle
+        radius: 9,
+        angle: 0,        // apex pointing up (north)
         fill: new Fill({ color: '#0EA5E9' }),
-        stroke: new Stroke({ color: 'rgba(255,255,255,0.90)', width: 2 }),
+        stroke: new Stroke({ color: 'rgba(15,23,42,0.90)', width: 2 }),
       }),
       text: new Text({
         text: 'VESSEL',
         font: 'bold 9px "JetBrains Mono",monospace',
         fill: new Fill({ color: '#0EA5E9' }),
         stroke: new Stroke({ color: 'rgba(0,0,0,0.80)', width: 2.5 }),
-        offsetY: -18,
+        offsetY: -20,
       }),
     }));
     s.vessel.addFeature(vf);

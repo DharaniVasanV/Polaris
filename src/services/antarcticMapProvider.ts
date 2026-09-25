@@ -91,13 +91,31 @@ export class AntarcticMapProvider {
     });
   }
 
-  // ─── NASA GIBS Blue Marble Shaded Relief Bathymetry in EPSG:3031 ──────────
+  // ─── NASA GIBS BlueMarble Shaded Relief Bathymetry in EPSG:3031 ──────────────
   private createNASAGIBSLayer(): TileLayer<XYZ> {
-    // NASA GIBS tileGrid for EPSG:3031 (from GIBS API docs)
+    // GIBS EPSG:3031 '500m' TileMatrixSet — verified from GetCapabilities:
+    // https://gibs.earthdata.nasa.gov/wmts/epsg3031/best/wmts.cgi?SERVICE=WMTS&REQUEST=GetCapabilities
+    //
+    // The 500m TileMatrixSet has EXACTLY 5 valid TileMatrix IDs: 0, 1, 2, 3, 4.
+    // Requesting TileMatrix 5 or higher returns HTTP 400.
+    // The old code had 8 resolutions [32768...256], causing OL to generate
+    // TileMatrix URLs 5, 6, 7 — all invalid.
+    //
+    // Fix: use only 5 resolutions so OL tile grid index 0→4 = GIBS TileMatrix 0→4.
+    //
+    // Geometry (from capabilities BoundingBox crs='EPSG::3031'):
+    //   extent: [-4194304, -4194304, 4194304, 4194304]
+    //   origin: [-4194304, 4194304]  (top-left)
+    //   tile size: 512×512 px
+    //
+    // Resolutions (m/px for each TileMatrix level):
+    //   TileMatrix 0: 8192 m/px  (2×2 tiles at 512px = 8388608m coverage)
+    //   TileMatrix 1: 4096 m/px
+    //   TileMatrix 2: 2048 m/px
+    //   TileMatrix 3: 1024 m/px
+    //   TileMatrix 4:  512 m/px  ← finest level for this product
     const origin: [number, number] = [-4194304, 4194304];
-    const resolutions = [
-      32768, 16384, 8192, 4096, 2048, 1024, 512, 256,
-    ];
+    const resolutions = [8192, 4096, 2048, 1024, 512]; // EXACTLY 5 levels: TileMatrix 0-4
 
     const gibsTileGrid = new TileGrid({
       origin,
@@ -108,6 +126,8 @@ export class AntarcticMapProvider {
 
     return new TileLayer({
       source: new XYZ({
+        // REST URL: .../500m/{TileMatrix}/{TileRow}/{TileCol}.jpeg
+        // OL maps {z}=0 → TileMatrix 0, {z}=4 → TileMatrix 4
         url: 'https://gibs.earthdata.nasa.gov/wmts/epsg3031/best/BlueMarble_ShadedRelief_Bathymetry/default/500m/{z}/{y}/{x}.jpeg',
         projection: 'EPSG:3031',
         tileGrid: gibsTileGrid,
