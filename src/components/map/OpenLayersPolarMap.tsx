@@ -227,27 +227,33 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     return () => { observer.disconnect(); map.setTarget(undefined); mapRef.current = null; };
   }, []);
 
-  // ─── 2. GRATICULE (RESTRAINED) ────────────────────────────────────────────
-  // Major: 60, 70, 80, 90°S — Minor: 65, 75, 85°S. Navy 0.22-0.40 opacity.
+  // ─── 2. GRATICULE (RESTRAINED - SPEC §12) ───────────────────────────────
+  // Use ONLY: 60°S, 70°S, 80°S, 90°S and major longitudes (0°, 30°E, 60°E, 90°E, 120°E, 150°E, 180°)
+  // Style: 1px, opacity 0.30, muted blue (rgba(51, 102, 153, 0.30))
   const drawGraticule = (src: VectorSource) => {
     src.clear();
-    const MAJOR_LATS = [-60, -70, -80, -90];
-    const MINOR_LATS = [-65, -75, -85];
-    const MAJOR_CLR = 'rgba(30,58,138,0.40)';
-    const MINOR_CLR = 'rgba(30,58,138,0.22)';
+    const LATS = [-60, -70, -80, -90];
+    const CLR = 'rgba(51, 102, 153, 0.30)';
 
-    [...MAJOR_LATS, ...MINOR_LATS].forEach((lat) => {
-      const isMajor = MAJOR_LATS.includes(lat);
+    LATS.forEach((lat) => {
       const ring: [number, number][] = [];
       for (let lon = -180; lon <= 180; lon += 5) ring.push(to3031(lon, lat));
       const f = new Feature({ geometry: new Polygon([ring]) });
       f.setStyle(new Style({
-        stroke: new Stroke({ color: isMajor ? MAJOR_CLR : MINOR_CLR, width: isMajor ? 1.0 : 0.7, lineDash: isMajor ? [6, 6] : [3, 6] }),
+        stroke: new Stroke({ color: CLR, width: 1.0, lineDash: [6, 6] }),
       }));
       src.addFeature(f);
-      if (isMajor && lat !== -90) {
+      if (lat !== -90) {
         const lf = new Feature({ geometry: new Point(to3031(0, lat)) });
-        lf.setStyle(new Style({ text: new Text({ text: `${Math.abs(lat)}°S`, font: '10px "JetBrains Mono",monospace', fill: new Fill({ color: 'rgba(30,58,138,0.85)' }), stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }), offsetY: -8 }) }));
+        lf.setStyle(new Style({
+          text: new Text({
+            text: `${Math.abs(lat)}°S`,
+            font: '10px "JetBrains Mono",monospace',
+            fill: new Fill({ color: 'rgba(51, 102, 153, 0.75)' }),
+            stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }),
+            offsetY: -8,
+          }),
+        }));
         src.addFeature(lf);
       }
     });
@@ -256,12 +262,12 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       const spoke: [number, number][] = [];
       for (let lat = -89.5; lat >= -58; lat -= 3) spoke.push(to3031(lon, lat));
       const f = new Feature({ geometry: new LineString(spoke) });
-      f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(30,58,138,0.28)', width: 0.7, lineDash: [4, 7] }) }));
+      f.setStyle(new Style({ stroke: new Stroke({ color: CLR, width: 1.0, lineDash: [4, 6] }) }));
       src.addFeature(f);
       if (lon % 30 === 0) {
         const txt = lon === 0 ? '0°' : lon === 180 ? '180°' : lon > 0 ? `${lon}°E` : `${Math.abs(lon)}°W`;
         const lf = new Feature({ geometry: new Point(to3031(lon, -58)) });
-        lf.setStyle(new Style({ text: new Text({ text: txt, font: '9px "JetBrains Mono",monospace', fill: new Fill({ color: 'rgba(30,58,138,0.75)' }), stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }) }) }));
+        lf.setStyle(new Style({ text: new Text({ text: txt, font: '9px "JetBrains Mono",monospace', fill: new Fill({ color: 'rgba(51, 102, 153, 0.75)' }), stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }) }) }));
         src.addFeature(lf);
       }
     });
@@ -526,7 +532,8 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     if (map && s.basemapLayer) {
       map.removeLayer(s.basemapLayer);
       const newLayer = providerRef.current.createBasemapLayer();
-      map.getLayers().insertAt(0, newLayer);
+      // Insert at index 1 (above s.oceanBg at index 0)
+      map.getLayers().insertAt(1, newLayer);
       s.basemapLayer = newLayer;
     }
   };
