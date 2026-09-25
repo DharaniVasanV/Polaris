@@ -45,33 +45,29 @@ proj3031.setExtent([-4898635, -4898635, 4898635, 4898635]);
 const _to3031 = (lon: number, lat: number): [number, number] =>
   transform([lon, lat], 'EPSG:4326', 'EPSG:3031') as [number, number];
 
-/**
- * Compute the tight EPSG:3031 bounding box that encompasses the full
- * 60°S latitude ring (all longitudes) + the South Pole.
- * This is the correct initial fit extent for Antarctica 60°S–90°S.
- */
-function computeAntarcticFitExtent(): [number, number, number, number] {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-  for (let lon = -180; lon <= 180; lon += 5) {
-    const [x, y] = _to3031(lon, -60);
-    if (x < minX) minX = x;
-    if (y < minY) minY = y;
-    if (x > maxX) maxX = x;
-    if (y > maxY) maxY = y;
-  }
-  // Include South Pole
-  const [px, py] = _to3031(0, -90);
-  if (px < minX) minX = px;
-  if (py < minY) minY = py;
-  if (px > maxX) maxX = px;
-  if (py > maxY) maxY = py;
-  // Add 8% padding
-  const padX = (maxX - minX) * 0.08;
-  const padY = (maxY - minY) * 0.08;
-  return [minX - padX, minY - padY, maxX + padX, maxY + padY];
-}
+// ─── Antarctic initial fit extent ──────────────────────────────────────
+// Hardcoded EPSG:3031 extent that encompasses 55°S → 90°S (all longitudes).
+// Using 55°S gives a generous Southern Ocean margin beyond the 60°S ring,
+// ensuring the full peninsula, Ross Sea and Weddell Sea are visible.
+// In EPSG:3031: 60°S ring radius ≈ 2,623,000 m; 55°S ring ≈ 3,333,000 m.
+//
+// The user-provided value [-3333134, -3333134, 3333134, 3333134] is correct.
+// We expand by one step to [-3500000, -3500000, 3500000, 3500000] for padding.
+const ANTARCTIC_FIT_EXTENT: [number, number, number, number] =
+  [-3500000, -3500000, 3500000, 3500000];
 
-const ANTARCTIC_FIT_EXTENT = computeAntarcticFitExtent();
+// Helper: apply the initial fit with updateSize first so pixel dimensions
+// reflect the actual container size after the dashboard layout is complete.
+function fitAntarctica(map: Map) {
+  map.updateSize();
+  const size = map.getSize();
+  map.getView().fit(ANTARCTIC_FIT_EXTENT, {
+    size,
+    padding: [40, 40, 40, 40],
+    nearest: true,
+    duration: 0,
+  });
+}
 
 interface Props {
   state: PolarisAppState;
@@ -179,15 +175,25 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
 
     drawGraticule(s.graticule);
 
-    // ── FIT view to 60°S → 90°S geographic extent (all longitudes) ──────────
-    // This is the correct way to guarantee the whole continent is visible
-    // regardless of the container pixel size at mount time.
-    map.once('rendercomplete', () => {
-      map.getView().fit(ANTARCTIC_FIT_EXTENT, {
-        padding: [24, 24, 24, 24],
-        duration: 0,
+    // ── FIT: Wait for the dashboard layout to settle before fitting ──────────
+    // WHY: rendercomplete fires immediately after the first OL render, which
+    // may happen before the React sidebar panels have finished their CSS layout.
+    // If the map container pixel size is wrong at that moment, the fit() call
+    // will produce the wrong zoom level (often zoomed too far in).
+    // FIX: double requestAnimationFrame guarantees we run AFTER the browser
+    // has completed both React render + CSS layout + paint.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        fitAntarctica(map);
       });
     });
+
+    // ── ResizeObserver: re-fit when the container is resized (e.g. sidebar toggle)
+    const observer = new ResizeObserver(() => {
+      if (!mapRef.current) return;
+      mapRef.current.updateSize();
+    });
+    if (mapDivRef.current) observer.observe(mapDivRef.current);
 
     map.on('pointermove', (evt) => {
       const [lon, lat] = fromProj(evt.coordinate[0], evt.coordinate[1]);
@@ -203,7 +209,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     });
 
     mapRef.current = map;
-    return () => { map.setTarget(undefined); mapRef.current = null; };
+    return () => { observer.disconnect(); map.setTarget(undefined); mapRef.current = null; };
   }, []);
 
   // ─── 2. GRATICULE ─────────────────────────────────────────────────────────
@@ -498,8 +504,11 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           { icon: <ZoomOut className="w-4 h-4" />, onClick: () => mapRef.current?.getView().setZoom((mapRef.current.getView().getZoom() ?? 2) - 0.4), title: 'Zoom Out', cls: 'text-sky-400' },
           {
             icon: <RotateCcw className="w-4 h-4" />,
-            onClick: () => mapRef.current?.getView().fit(ANTARCTIC_FIT_EXTENT, { padding: [24, 24, 24, 24], duration: 700 }),
-            title: 'Reset Antarctic View (60°S – 90°S)',
+            onClick: () => {
+              const m = mapRef.current;
+              if (m) { m.updateSize(); m.getView().fit(ANTARCTIC_FIT_EXTENT, { size: m.getSize(), padding: [40, 40, 40, 40], nearest: true, duration: 700 }); }
+            },
+            title: 'Full Antarctica (55°S – 90°S)',
             cls: 'text-amber-400',
           },
           {
@@ -557,6 +566,31 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         ))}
       </div>
 
+      {/* ── Quick Navigation Buttons ── */}
+      <div className="absolute top-14 right-4 z-[1000] flex gap-2">
+        <button
+          onClick={() => {
+            const m = mapRef.current;
+            if (m) { m.updateSize(); m.getView().fit(ANTARCTIC_FIT_EXTENT, { size: m.getSize(), padding: [40, 40, 40, 40], nearest: true, duration: 600 }); }
+          }}
+          className="px-3 py-1 rounded-lg border border-amber-500/60 bg-amber-950/80 text-amber-300 text-[11px] font-bold hover:bg-amber-900/80 transition-colors shadow-xl backdrop-blur-md flex items-center gap-1.5"
+          title="Fit full 55°S – 90°S Antarctica"
+        >
+          🌍 ANTARCTICA
+        </button>
+        <button
+          onClick={() => {
+            const vLat = state.departureLocation?.latitude ?? -63;
+            const vLon = state.departureLocation?.longitude ?? 0;
+            mapRef.current?.getView().animate({ center: to3031(vLon, vLat), zoom: 5, duration: 600 });
+          }}
+          className="px-3 py-1 rounded-lg border border-emerald-500/60 bg-emerald-950/80 text-emerald-300 text-[11px] font-bold hover:bg-emerald-900/80 transition-colors shadow-xl backdrop-blur-md flex items-center gap-1.5"
+          title="Zoom to vessel position"
+        >
+          ⚓ ZOOM TO VESSEL
+        </button>
+      </div>
+
       {/* Basemap Menu */}
       {showBasemapMenu && (
         <div className="absolute top-14 right-4 z-[1000] w-[260px] bg-slate-900/95 border border-slate-800 rounded-xl p-3 shadow-2xl backdrop-blur-md flex flex-col gap-2 text-xs">
@@ -607,8 +641,42 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           return { lat0: r0.latitude, lon0: r0.longitude, latN: rN.latitude, lonN: rN.longitude, x0: bx0.toFixed(0), y0: by0.toFixed(0), x1: bx1.toFixed(0), y1: by1.toFixed(0) };
         })();
         return (
-          <div className="absolute top-14 right-4 z-[1100] w-[310px] bg-slate-950/98 border border-emerald-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md font-mono text-[10px] text-slate-300 flex flex-col gap-1.5">
+          <div className="absolute top-14 right-4 z-[1100] w-[320px] bg-slate-950/98 border border-emerald-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md font-mono text-[10px] text-slate-300 flex flex-col gap-1.5">
             <div className="font-bold text-emerald-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-0.5">🛠 Coordinate Pipeline Debug</div>
+
+            {/* Live map view info */}
+            {(() => {
+              const m = mapRef.current;
+              if (!m) return <div className="text-slate-500">Map not yet initialized</div>;
+              const v = m.getView();
+              const sz = m.getSize();
+              const ext = v.calculateExtent(sz);
+              const ctr = v.getCenter();
+              const res = v.getResolution();
+              return (
+                <>
+                  <div className="text-lime-300 font-bold">MAP CONTAINER SIZE</div>
+                  <div>{sz ? `${sz[0]}×${sz[1]} px` : 'unknown'}</div>
+                  <div className="text-lime-300 font-bold mt-1">VIEW CENTER (EPSG:3031)</div>
+                  <div>X: {ctr ? ctr[0].toFixed(0) : '?'} m  Y: {ctr ? ctr[1].toFixed(0) : '?'} m</div>
+                  <div className="text-lime-300 font-bold mt-1">VIEW RESOLUTION</div>
+                  <div>{res ? res.toFixed(1) : '?'} m/px</div>
+                  <div className="text-lime-300 font-bold mt-1">CURRENT EXTENT (EPSG:3031)</div>
+                  <div>minX: {ext ? ext[0].toFixed(0) : '?'}</div>
+                  <div>minY: {ext ? ext[1].toFixed(0) : '?'}</div>
+                  <div>maxX: {ext ? ext[2].toFixed(0) : '?'}</div>
+                  <div>maxY: {ext ? ext[3].toFixed(0) : '?'}</div>
+                  <div className="text-lime-300 font-bold mt-1">TARGET EXTENT (EPSG:3031)</div>
+                  <div>-3500000, -3500000, 3500000, 3500000</div>
+                  <div className={`font-bold mt-0.5 ${ext && Math.abs(ext[0]) > 3000000 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                    {ext && Math.abs(ext[0]) > 3000000 ? '✓ Extent looks correct' : '✗ Extent too narrow — re-fit needed'}
+                  </div>
+                  <button onClick={() => { if (m) { m.updateSize(); m.getView().fit(ANTARCTIC_FIT_EXTENT, { size: m.getSize(), padding: [40,40,40,40], nearest: true, duration: 0 }); }}} className="mt-1 bg-lime-800 hover:bg-lime-700 text-lime-200 px-2 py-1 rounded font-bold text-[10px]">Force Re-fit Antarctica</button>
+                </>
+              );
+            })()}
+
+            <div className="border-t border-slate-800 mt-1 pt-1" />
             <div className="text-amber-300 font-bold">VESSEL (EPSG:4326)</div>
             <div>LAT: {vLat.toFixed(6)}°  LON: {vLon.toFixed(6)}°</div>
             <div className="text-amber-300 font-bold mt-1">VESSEL (EPSG:3031)</div>
