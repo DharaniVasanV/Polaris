@@ -212,58 +212,43 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     return () => { observer.disconnect(); map.setTarget(undefined); mapRef.current = null; };
   }, []);
 
-  // ─── 2. GRATICULE ─────────────────────────────────────────────────────────
+  // ─── 2. GRATICULE (RESTRAINED) ────────────────────────────────────────────
+  // Major: 60, 70, 80, 90°S — Minor: 65, 75, 85°S. Navy 0.22-0.40 opacity.
   const drawGraticule = (src: VectorSource) => {
     src.clear();
+    const MAJOR_LATS = [-60, -70, -80, -90];
+    const MINOR_LATS = [-65, -75, -85];
+    const MAJOR_CLR = 'rgba(30,58,138,0.40)';
+    const MINOR_CLR = 'rgba(30,58,138,0.22)';
 
-    // Latitude rings: 60°S … 85°S
-    [-60, -65, -70, -75, -80, -85].forEach((lat) => {
+    [...MAJOR_LATS, ...MINOR_LATS].forEach((lat) => {
+      const isMajor = MAJOR_LATS.includes(lat);
       const ring: [number, number][] = [];
-      for (let lon = -180; lon <= 180; lon += 3) ring.push(to3031(lon, lat));
+      for (let lon = -180; lon <= 180; lon += 5) ring.push(to3031(lon, lat));
       const f = new Feature({ geometry: new Polygon([ring]) });
       f.setStyle(new Style({
-        stroke: new Stroke({ color: 'rgba(2,132,199,0.55)', width: 1, lineDash: [4, 5] }),
+        stroke: new Stroke({ color: isMajor ? MAJOR_CLR : MINOR_CLR, width: isMajor ? 1.0 : 0.7, lineDash: isMajor ? [6, 6] : [3, 6] }),
       }));
       src.addFeature(f);
-
-      // Lat label at 0° and 90°E
-      [0, 90].forEach((llon) => {
-        const lf = new Feature({ geometry: new Point(to3031(llon, lat)) });
-        lf.setStyle(new Style({
-          text: new Text({
-            text: `${Math.abs(lat)}°S`,
-            font: 'bold 10px "JetBrains Mono",monospace',
-            fill: new Fill({ color: '#38BDF8' }),
-            stroke: new Stroke({ color: '#000814', width: 2.5 }),
-            offsetY: -8,
-          }),
-        }));
+      if (isMajor && lat !== -90) {
+        const lf = new Feature({ geometry: new Point(to3031(0, lat)) });
+        lf.setStyle(new Style({ text: new Text({ text: `${Math.abs(lat)}°S`, font: '10px "JetBrains Mono",monospace', fill: new Fill({ color: 'rgba(30,58,138,0.85)' }), stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }), offsetY: -8 }) }));
         src.addFeature(lf);
-      });
+      }
     });
 
-    // Longitude spokes: 0°, 30°E, 60°E, 90°E, 120°E, 150°E, 180°, and western equivalents
     [0, 30, 60, 90, 120, 150, 180, -30, -60, -90, -120, -150].forEach((lon) => {
       const spoke: [number, number][] = [];
-      for (let lat = -90; lat <= -55; lat += 2) spoke.push(to3031(lon, lat));
+      for (let lat = -89.5; lat >= -58; lat -= 3) spoke.push(to3031(lon, lat));
       const f = new Feature({ geometry: new LineString(spoke) });
-      f.setStyle(new Style({
-        stroke: new Stroke({ color: 'rgba(2,132,199,0.45)', width: 0.8, lineDash: [3, 5] }),
-      }));
+      f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(30,58,138,0.28)', width: 0.7, lineDash: [4, 7] }) }));
       src.addFeature(f);
-
-      // Meridian label at outer ring
-      const lf = new Feature({ geometry: new Point(to3031(lon, -57)) });
-      const txt = lon === 0 ? '0°' : lon === 180 ? '180°' : lon > 0 ? `${lon}°E` : `${Math.abs(lon)}°W`;
-      lf.setStyle(new Style({
-        text: new Text({
-          text: txt,
-          font: 'bold 10px "JetBrains Mono",monospace',
-          fill: new Fill({ color: '#7DD3FC' }),
-          stroke: new Stroke({ color: '#000814', width: 3 }),
-        }),
-      }));
-      src.addFeature(lf);
+      if (lon % 30 === 0) {
+        const txt = lon === 0 ? '0°' : lon === 180 ? '180°' : lon > 0 ? `${lon}°E` : `${Math.abs(lon)}°W`;
+        const lf = new Feature({ geometry: new Point(to3031(lon, -58)) });
+        lf.setStyle(new Style({ text: new Text({ text: txt, font: '9px "JetBrains Mono",monospace', fill: new Fill({ color: 'rgba(30,58,138,0.75)' }), stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }) }) }));
+        src.addFeature(lf);
+      }
     });
   };
 
@@ -280,7 +265,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     });
     if (pts.length > 1) {
       const lf = new Feature({ geometry: new LineString(pts) });
-      lf.setStyle(new Style({ stroke: new Stroke({ color: '#F59E0B', width: 2.5, lineDash: [6, 4] }) }));
+      lf.setStyle(new Style({ stroke: new Stroke({ color: '#F59E0B', width: 2, lineDash: [6, 4] }) }));
       src.addFeature(lf);
       let nm = 0;
       for (let i = 0; i < pts.length - 1; i++) {
@@ -292,7 +277,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     }
   };
 
-  // ─── 4. POLARIS OVERLAYS ──────────────────────────────────────────────────
+  // ─── 4. POLARIS OVERLAYS (RESTRAINED RENDERING) ───────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     const s = srcRef.current;
@@ -302,7 +287,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     const th = state.simulationTimeHours;
     const envGrid = applyScenarioToEnvironment(BASELINE_ENVIRONMENT_GRID, state.activeScenario);
 
-    // Sentinel-1 SAR — ONLY when checkbox ON
+    // ── Sentinel-1 SAR ── ONLY when checkbox ON ──────────────────────────────
     if (s.sarLayer) { map.removeLayer(s.sarLayer); s.sarLayer = null; }
     if (ly.sentinel1Sar && state.sentinel1ImageAvailable && state.sentinel1ImageUrl) {
       const bbox = state.sentinel1ImageBbox || state.sentinel1ImageMetadata?.image_bbox;
@@ -316,7 +301,8 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
             imageExtent: [Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1)],
             crossOrigin: 'anonymous',
           }),
-          opacity: state.sentinel1Opacity ?? 0.70,
+          // Restrained Sentinel-1 opacity — basemap must remain visible underneath
+          opacity: Math.min(state.sentinel1Opacity ?? 0.52, 0.60),
           zIndex: 4,
         });
         map.addLayer(sar);
@@ -324,7 +310,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       }
     }
 
-    // Sea Ice & NO-GO
+    // ── Sea Ice & NO-GO (geographic cells only, low opacity) ─────────────────
     s.seaIce.clear(); s.risk.clear(); s.noGo.clear();
     if (ly.seaIce || ly.noGoZones) {
       const thresh = state.vessel.safeSicThresholdPercent;
@@ -334,134 +320,178 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           if (cell.isLand || cell.isIceShelf) continue;
           const sic = cell.sicValues[th] ?? cell.sicValues[0];
           const risk = evaluateCellRisk(cell, th, state.vessel, state.icebergs);
+          // Geographic cell polygon — 4326 → 3031 for EVERY corner
           const poly: [number, number][] = [
-            to3031(envGrid[r][c].longitude, envGrid[r][c].latitude),
+            to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
             to3031(envGrid[r][c + 1].longitude, envGrid[r][c + 1].latitude),
             to3031(envGrid[r + 1][c + 1].longitude, envGrid[r + 1][c + 1].latitude),
             to3031(envGrid[r + 1][c].longitude, envGrid[r + 1][c].latitude),
-            to3031(envGrid[r][c].longitude, envGrid[r][c].latitude),
+            to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
           ];
 
+          // NO-GO: dark red, 0.28 opacity, thin dashed border
           if (ly.noGoZones && risk.isNoGo) {
             const f = new Feature({ geometry: new Polygon([poly]) });
-            f.setStyle(new Style({ fill: new Fill({ color: 'rgba(220,38,38,0.30)' }), stroke: new Stroke({ color: '#DC2626', width: 1, lineDash: [4, 4] }) }));
+            f.setStyle(new Style({
+              fill: new Fill({ color: 'rgba(185,28,28,0.28)' }),
+              stroke: new Stroke({ color: 'rgba(220,38,38,0.60)', width: 0.8, lineDash: [4, 4] }),
+            }));
             s.noGo.addFeature(f);
           }
 
-          if (ly.seaIce) {
-            let col = 'rgba(16,185,129,0.15)';
-            if (risk.totalRisk >= 70 || sic >= thresh) col = 'rgba(239,68,68,0.35)';
-            else if (risk.totalRisk >= 50 || sic >= 50) col = 'rgba(249,115,22,0.28)';
-            else if (risk.totalRisk >= 30 || sic >= 25) col = 'rgba(245,158,11,0.22)';
+          // Sea Ice: restrained cyan — basemap must show through clearly
+          if (ly.seaIce && sic > 5) {
+            // Color scale from low to high SIC — all at low opacity so basemap shows through
+            let col: string;
+            if (sic >= thresh || risk.totalRisk >= 70) col = 'rgba(239,68,68,0.22)';
+            else if (sic >= 60 || risk.totalRisk >= 50)  col = 'rgba(249,115,22,0.18)';
+            else if (sic >= 30 || risk.totalRisk >= 30)  col = 'rgba(251,191,36,0.16)';
+            else                                           col = 'rgba(56,189,248,0.14)';
             const f = new Feature({ geometry: new Polygon([poly]) });
-            f.setStyle(new Style({ fill: new Fill({ color: col }), stroke: new Stroke({ color: 'rgba(255,255,255,0.04)', width: 0.3 }) }));
+            f.setStyle(new Style({
+              fill: new Fill({ color: col }),
+              stroke: new Stroke({ color: 'rgba(6,182,212,0.12)', width: 0.3 }),
+            }));
             s.seaIce.addFeature(f);
           }
         }
       }
     }
 
-    // Icebergs
+    // ── Icebergs (small, restrained) ────────────────────────────────────────
     s.iceberg.clear(); s.uncertainty.clear();
     if (ly.icebergs) {
       state.icebergs.forEach((berg) => {
         const isB22 = berg.id === 'B-22';
         const isCrit = berg.riskLevel === 'CRITICAL';
 
+        // Historical track — thin faded gray
         if (ly.icebergForecast && berg.historicalTrack.length > 1) {
           const f = new Feature({ geometry: new LineString(berg.historicalTrack.map(p => to3031(p.longitude, p.latitude))) });
-          f.setStyle(new Style({ stroke: new Stroke({ color: '#64748B', width: 1.5 }) }));
+          f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(100,116,139,0.55)', width: 1 }) }));
           s.iceberg.addFeature(f);
         }
+        // Forecast track — dashed 1.5px
         if (ly.icebergForecast && berg.forecastTrack.length > 1) {
+          const col = isCrit ? 'rgba(245,158,11,0.80)' : 'rgba(6,182,212,0.75)';
           const f = new Feature({ geometry: new LineString(berg.forecastTrack.map(p => to3031(p.longitude, p.latitude))) });
-          f.setStyle(new Style({ stroke: new Stroke({ color: isCrit ? '#F59E0B' : '#06B6D4', width: 2, lineDash: [5, 4] }) }));
+          f.setStyle(new Style({ stroke: new Stroke({ color: col, width: 1.5, lineDash: [5, 4] }) }));
           s.iceberg.addFeature(f);
         }
+        // Uncertainty envelopes — thin outline, very low fill opacity
         if (ly.icebergUncertainty) {
           berg.forecastTrack.forEach(pt => {
             if (!pt.horizonHours) return;
-            const f = new Feature({ geometry: new CircleGeom(to3031(pt.longitude, pt.latitude), (pt.uncertaintyRadiusKm || 5) * 1000) });
+            const rad = (pt.uncertaintyRadiusKm || 5) * 1000;
+            const f = new Feature({ geometry: new CircleGeom(to3031(pt.longitude, pt.latitude), rad) });
+            const uncFill = isB22 && pt.horizonHours >= 24 ? 'rgba(239,68,68,0.10)' : 'rgba(6,182,212,0.06)';
+            const uncStroke = isB22 && pt.horizonHours >= 24 ? 'rgba(239,68,68,0.50)' : 'rgba(6,182,212,0.40)';
             f.setStyle(new Style({
-              fill: new Fill({ color: isB22 && pt.horizonHours >= 24 ? 'rgba(239,68,68,0.15)' : 'rgba(6,182,212,0.08)' }),
-              stroke: new Stroke({ color: isB22 && pt.horizonHours >= 24 ? '#EF4444' : '#0284C7', width: 1, lineDash: [3, 3] }),
+              fill: new Fill({ color: uncFill }),
+              stroke: new Stroke({ color: uncStroke, width: 0.8, lineDash: [3, 4] }),
             }));
             s.uncertainty.addFeature(f);
           });
         }
 
+        // Iceberg position marker — small 5-7px
         const f = new Feature({ geometry: new Point(to3031(berg.currentPosition.longitude, berg.currentPosition.latitude)) });
         f.setStyle(new Style({
-          image: new CircleStyle({ radius: isB22 ? 8 : 6, fill: new Fill({ color: isB22 ? '#EF4444' : '#38BDF8' }), stroke: new Stroke({ color: '#fff', width: 2 }) }),
-          text: new Text({ text: berg.name, font: 'bold 9px "Inter",sans-serif', fill: new Fill({ color: '#fff' }), stroke: new Stroke({ color: '#000', width: 2.5 }), offsetX: 12, offsetY: -2 }),
+          image: new CircleStyle({
+            radius: isB22 ? 7 : 5,
+            fill: new Fill({ color: isB22 ? '#EF4444' : '#22D3EE' }),
+            stroke: new Stroke({ color: 'rgba(255,255,255,0.80)', width: 1.5 }),
+          }),
+          // Only label B-22 by default; others unlabeled unless zoomed in
+          text: isB22 ? new Text({
+            text: berg.name,
+            font: '9px "Inter",sans-serif',
+            fill: new Fill({ color: '#FCA5A5' }),
+            stroke: new Stroke({ color: 'rgba(0,0,0,0.7)', width: 2 }),
+            offsetX: 10, offsetY: -8,
+          }) : undefined,
         }));
         s.iceberg.addFeature(f);
       });
     }
 
-    // Routes
+    // ── Routes (thin, clean) ──────────────────────────────────────────────
     s.route.clear();
     state.routes.forEach((route) => {
       if (route.type === 'SHORTEST_REJECTED' && !ly.shortestRoute) return;
-      if (route.type === 'SAFE_A' && !ly.recommendedRoute) return;
-      if (route.type === 'ALTERNATIVE_B' && !ly.alternativeRoute) return;
+      if (route.type === 'SAFE_A'            && !ly.recommendedRoute) return;
+      if (route.type === 'ALTERNATIVE_B'     && !ly.alternativeRoute) return;
 
       const isRej = route.type === 'SHORTEST_REJECTED' || route.status === 'REJECTED';
-      let col = '#0284C7'; let w = route.id === state.selectedRouteId ? 5.5 : 3.5; let dash: number[] | undefined;
-      if (route.type === 'SAFE_A') { col = '#0284C7'; w = 5.5; }
-      else if (route.type === 'ALTERNATIVE_B') { col = '#D97706'; w = 4; dash = [6, 6]; }
-      else if (isRej) { col = '#64748B'; w = 3; dash = [4, 4]; }
+      const isSel = route.id === state.selectedRouteId;
+
+      let col: string, w: number, dash: number[] | undefined, opacity = 1;
+      if (route.type === 'SAFE_A') {
+        col = '#06B6D4'; w = isSel ? 4.0 : 3.0;                  // cyan — recommended
+      } else if (route.type === 'ALTERNATIVE_B') {
+        col = '#F59E0B'; w = 2.5; dash = [7, 5];                  // amber dashed — alternative
+      } else if (isRej) {
+        col = 'rgba(100,116,139,0.55)'; w = 1.5; dash = [4, 5];  // slate dotted — shortest rejected
+      } else {
+        col = '#06B6D4'; w = 2.5;
+      }
 
       const f = new Feature({ geometry: new LineString(route.waypoints.map(wp => to3031(wp.longitude, wp.latitude))) });
       f.setStyle(new Style({ stroke: new Stroke({ color: col, width: w, lineDash: dash }) }));
       s.route.addFeature(f);
     });
 
-    // What-If counterfactual route
+    // Counterfactual route — only when scenario/what-if is active
     if (state.activeWhatIfResult?.scenario_optimization?.candidate_routes) {
       const opt = state.activeWhatIfResult.scenario_optimization;
       const cands: any[] = opt.candidate_routes || [];
       const rec = cands.find((c: any) => c.route_id === opt.recommended_route_id) || cands[0];
       if (rec?.waypoints?.length) {
         const f = new Feature({ geometry: new LineString(rec.waypoints.map((wp: any) => to3031(wp.longitude, wp.latitude))) });
-        f.setStyle(new Style({ stroke: new Stroke({ color: '#7C3AED', width: 4.5, lineDash: [6, 6] }) }));
+        f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(139,92,246,0.85)', width: 2.5, lineDash: [6, 5] }) }));
         s.route.addFeature(f);
       }
     }
 
-    // Vessel
+    // ── Vessel (small, clean) ──────────────────────────────────────────────
     s.vessel.clear();
     const vLat = state.departureLocation?.latitude ?? -63.0;
     const vLon = state.departureLocation?.longitude ?? 0.0;
     const vf = new Feature({ geometry: new Point(to3031(vLon, vLat)) });
     vf.setStyle(new Style({
-      image: new CircleStyle({ radius: 9, fill: new Fill({ color: '#38BDF8' }), stroke: new Stroke({ color: '#fff', width: 2.5 }) }),
+      image: new CircleStyle({
+        radius: 8,
+        fill: new Fill({ color: '#0EA5E9' }),
+        stroke: new Stroke({ color: 'rgba(255,255,255,0.90)', width: 2 }),
+      }),
       text: new Text({
-        text: `VESSEL\n${Math.abs(vLat).toFixed(3)}°S, ${vLon.toFixed(3)}°${vLon >= 0 ? 'E' : 'W'}\nMANUAL / SIMULATED`,
+        text: 'VESSEL',
         font: 'bold 9px "JetBrains Mono",monospace',
-        fill: new Fill({ color: '#38BDF8' }),
-        stroke: new Stroke({ color: '#000814', width: 3 }),
-        offsetY: -28,
+        fill: new Fill({ color: '#0EA5E9' }),
+        stroke: new Stroke({ color: 'rgba(0,0,0,0.80)', width: 2.5 }),
+        offsetY: -18,
       }),
     }));
     s.vessel.addFeature(vf);
 
-    // Destination
+    // ── Destination ───────────────────────────────────────────────────
     s.dest.clear();
     if (state.destinationLocation) {
       const dLat = state.destinationLocation.latitude;
       const dLon = state.destinationLocation.longitude;
-      const distNm = haversineDistanceNm({ latitude: vLat, longitude: vLon }, { latitude: dLat, longitude: dLon });
-      const bearing = calculateBearing({ latitude: vLat, longitude: vLon }, { latitude: dLat, longitude: dLon });
       const df = new Feature({ geometry: new Point(to3031(dLon, dLat)) });
       df.setStyle(new Style({
-        image: new CircleStyle({ radius: 7, fill: new Fill({ color: '#F59E0B' }), stroke: new Stroke({ color: '#fff', width: 2 }) }),
+        image: new CircleStyle({
+          radius: 7,
+          fill: new Fill({ color: '#F59E0B' }),
+          stroke: new Stroke({ color: 'rgba(255,255,255,0.80)', width: 1.5 }),
+        }),
         text: new Text({
-          text: `TARGET: ${state.destinationLocation.name}\n${distNm.toFixed(0)} NM @ ${bearing.toFixed(0)}°`,
-          font: 'bold 9px "Inter",sans-serif',
+          text: state.destinationLocation.name,
+          font: '9px "Inter",sans-serif',
           fill: new Fill({ color: '#FDE68A' }),
-          stroke: new Stroke({ color: '#000814', width: 3 }),
-          offsetY: 22,
+          stroke: new Stroke({ color: 'rgba(0,0,0,0.80)', width: 2 }),
+          offsetY: 18,
         }),
       }));
       s.dest.addFeature(df);
