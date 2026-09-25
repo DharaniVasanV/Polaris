@@ -120,7 +120,7 @@ export const DecisionCenterScreen: React.FC<DecisionCenterScreenProps> = ({ stat
 
       {/* Center Tactical View with Live Radar & Floating Alerts */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#060B14] relative">
-        <div className="flex-1 w-full h-full relative overflow-hidden flex items-center justify-center">
+        <div className="flex-1 w-full h-full relative overflow-hidden">
           <PolarMap state={state} />
 
           <div className="absolute top-4 left-4 glass-panel px-4 py-2 rounded-xl border border-slate-700 flex items-center gap-3 shadow-xl">

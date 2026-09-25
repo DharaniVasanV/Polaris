@@ -37,12 +37,41 @@ proj4.defs(
 );
 register(proj4);
 const proj3031 = getProjection('EPSG:3031')!;
+// Full BAS tile service extent in EPSG:3031
 proj3031.setExtent([-4898635, -4898635, 4898635, 4898635]);
 
-// Initial view: extent shows roughly 55°S to 90°S (full Antarctica visible)
-// In EPSG:3031 coordinates, 60°S ring has radius ≈ 2,665,000 m from pole
-const INITIAL_CENTER: [number, number] = [0, 0]; // South Pole
-const INITIAL_ZOOM = 2;                           // Shows all Antarctica
+// ─── Geographic helper ────────────────────────────────────────────────────
+// Convert lon/lat (EPSG:4326) → EPSG:3031 [x,y] at module level for extent calc
+const _to3031 = (lon: number, lat: number): [number, number] =>
+  transform([lon, lat], 'EPSG:4326', 'EPSG:3031') as [number, number];
+
+/**
+ * Compute the tight EPSG:3031 bounding box that encompasses the full
+ * 60°S latitude ring (all longitudes) + the South Pole.
+ * This is the correct initial fit extent for Antarctica 60°S–90°S.
+ */
+function computeAntarcticFitExtent(): [number, number, number, number] {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let lon = -180; lon <= 180; lon += 5) {
+    const [x, y] = _to3031(lon, -60);
+    if (x < minX) minX = x;
+    if (y < minY) minY = y;
+    if (x > maxX) maxX = x;
+    if (y > maxY) maxY = y;
+  }
+  // Include South Pole
+  const [px, py] = _to3031(0, -90);
+  if (px < minX) minX = px;
+  if (py < minY) minY = py;
+  if (px > maxX) maxX = px;
+  if (py > maxY) maxY = py;
+  // Add 8% padding
+  const padX = (maxX - minX) * 0.08;
+  const padY = (maxY - minY) * 0.08;
+  return [minX - padX, minY - padY, maxX + padX, maxY + padY];
+}
+
+const ANTARCTIC_FIT_EXTENT = computeAntarcticFitExtent();
 
 interface Props {
   state: PolarisAppState;
@@ -62,6 +91,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
   const [showLayerControls, setShowLayerControls] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
   const [showBasemapMenu, setShowBasemapMenu] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measureNm, setMeasureNm] = useState(0);
@@ -115,16 +145,27 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       ],
       view: new View({
         projection: 'EPSG:3031',
-        center: INITIAL_CENTER,
-        zoom: INITIAL_ZOOM,
+        center: [0, 0],      // South Pole — will be overridden by fit()
+        zoom: 2,
         minZoom: 1,
         maxZoom: 9,
-        extent: [-5500000, -5500000, 5500000, 5500000],
+        // Constrain pan so user can't scroll completely off Antarctica
+        extent: [-5200000, -5200000, 5200000, 5200000],
       }),
       controls: [],
     });
 
     drawGraticule(s.graticule);
+
+    // ── FIT view to 60°S → 90°S geographic extent (all longitudes) ──────────
+    // This is the correct way to guarantee the whole continent is visible
+    // regardless of the container pixel size at mount time.
+    map.once('rendercomplete', () => {
+      map.getView().fit(ANTARCTIC_FIT_EXTENT, {
+        padding: [24, 24, 24, 24],
+        duration: 0,
+      });
+    });
 
     map.on('pointermove', (evt) => {
       const [lon, lat] = fromProj(evt.coordinate[0], evt.coordinate[1]);
@@ -431,10 +472,42 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         {[
           { icon: <ZoomIn className="w-4 h-4" />, onClick: () => mapRef.current?.getView().setZoom((mapRef.current.getView().getZoom() ?? 2) + 0.4), title: 'Zoom In', cls: 'text-sky-400' },
           { icon: <ZoomOut className="w-4 h-4" />, onClick: () => mapRef.current?.getView().setZoom((mapRef.current.getView().getZoom() ?? 2) - 0.4), title: 'Zoom Out', cls: 'text-sky-400' },
-          { icon: <RotateCcw className="w-4 h-4" />, onClick: () => mapRef.current?.getView().animate({ center: INITIAL_CENTER, zoom: INITIAL_ZOOM, duration: 700 }), title: 'Reset Antarctic View', cls: 'text-amber-400' },
-          { icon: <Navigation className="w-4 h-4" />, onClick: () => { const vLat = state.departureLocation?.latitude ?? -63; const vLon = state.departureLocation?.longitude ?? 0; mapRef.current?.getView().animate({ center: to3031(vLon, vLat), zoom: 4, duration: 700 }); }, title: 'Locate Vessel', cls: 'text-emerald-400' },
-          { icon: <Ruler className="w-4 h-4" />, onClick: () => { const next = !isMeasuring; setIsMeasuring(next); (window as any).__pol_measuring = next; if (!next) { measurePtsRef.current = []; setMeasureNm(0); srcRef.current.measure.clear(); } }, title: 'Measure Distance', cls: isMeasuring ? 'text-white bg-amber-500 rounded-lg' : 'text-amber-400' },
-          { icon: isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />, onClick: () => { if (!document.fullscreenElement) { wrapperRef.current?.requestFullscreen(); setIsFullscreen(true); } else { document.exitFullscreen(); setIsFullscreen(false); } }, title: 'Fullscreen', cls: 'text-slate-300' },
+          {
+            icon: <RotateCcw className="w-4 h-4" />,
+            onClick: () => mapRef.current?.getView().fit(ANTARCTIC_FIT_EXTENT, { padding: [24, 24, 24, 24], duration: 700 }),
+            title: 'Reset Antarctic View (60°S – 90°S)',
+            cls: 'text-amber-400',
+          },
+          {
+            icon: <Navigation className="w-4 h-4" />,
+            onClick: () => {
+              const vLat = state.departureLocation?.latitude ?? -63;
+              const vLon = state.departureLocation?.longitude ?? 0;
+              mapRef.current?.getView().animate({ center: to3031(vLon, vLat), zoom: 5, duration: 700 });
+            },
+            title: 'Locate Vessel',
+            cls: 'text-emerald-400',
+          },
+          {
+            icon: <Ruler className="w-4 h-4" />,
+            onClick: () => {
+              const next = !isMeasuring;
+              setIsMeasuring(next);
+              (window as any).__pol_measuring = next;
+              if (!next) { measurePtsRef.current = []; setMeasureNm(0); srcRef.current.measure.clear(); }
+            },
+            title: 'Measure Distance',
+            cls: isMeasuring ? 'text-white bg-amber-500 rounded-lg' : 'text-amber-400',
+          },
+          {
+            icon: isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />,
+            onClick: () => {
+              if (!document.fullscreenElement) { wrapperRef.current?.requestFullscreen(); setIsFullscreen(true); }
+              else { document.exitFullscreen(); setIsFullscreen(false); }
+            },
+            title: 'Fullscreen',
+            cls: 'text-slate-300',
+          },
         ].map((btn, idx) => (
           <button key={idx} onClick={btn.onClick} title={btn.title}
             className={`p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 transition-colors ${btn.cls}`}>
@@ -446,12 +519,15 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       {/* ── Right Controls ── */}
       <div className="absolute top-4 right-4 z-[1000] flex gap-2">
         {[
-          { label: 'Basemap', icon: <Globe className="w-3.5 h-3.5" />, active: showBasemapMenu, onClick: () => { setShowBasemapMenu(v => !v); setShowLayerControls(false); setShowLegend(false); } },
-          { label: 'Layers', icon: <Layers className="w-3.5 h-3.5" />, active: showLayerControls, onClick: () => { setShowLayerControls(v => !v); setShowBasemapMenu(false); setShowLegend(false); } },
-          { label: 'Legend', icon: <HelpCircle className="w-3.5 h-3.5" />, active: showLegend, onClick: () => { setShowLegend(v => !v); setShowLayerControls(false); setShowBasemapMenu(false); } },
+          { label: 'Basemap', icon: <Globe className="w-3.5 h-3.5" />, active: showBasemapMenu, onClick: () => { setShowBasemapMenu(v => !v); setShowLayerControls(false); setShowLegend(false); setShowDebug(false); } },
+          { label: 'Layers', icon: <Layers className="w-3.5 h-3.5" />, active: showLayerControls, onClick: () => { setShowLayerControls(v => !v); setShowBasemapMenu(false); setShowLegend(false); setShowDebug(false); } },
+          { label: 'Legend', icon: <HelpCircle className="w-3.5 h-3.5" />, active: showLegend, onClick: () => { setShowLegend(v => !v); setShowLayerControls(false); setShowBasemapMenu(false); setShowDebug(false); } },
+          { label: 'Debug', icon: <Compass className="w-3.5 h-3.5" />, active: showDebug, onClick: () => { setShowDebug(v => !v); setShowLegend(false); setShowLayerControls(false); setShowBasemapMenu(false); } },
         ].map((btn, i) => (
           <button key={i} onClick={btn.onClick}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xl backdrop-blur-md flex items-center gap-1.5 ${btn.active ? 'bg-sky-600 border-sky-400 text-white' : 'bg-slate-900/90 border-slate-800 text-sky-400 hover:bg-slate-800/90'}`}>
+            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xl backdrop-blur-md flex items-center gap-1.5 ${
+              btn.active ? 'bg-sky-600 border-sky-400 text-white' : 'bg-slate-900/90 border-slate-800 text-sky-400 hover:bg-slate-800/90'
+            }`}>
             {btn.icon}<span>{btn.label}</span>
           </button>
         ))}
@@ -487,6 +563,56 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           <MapLegend />
         </div>
       )}
+
+      {/* Debug overlay — shows coordinate pipeline values for alignment verification */}
+      {showDebug && (() => {
+        const vLat = state.departureLocation?.latitude ?? -63.0;
+        const vLon = state.departureLocation?.longitude ?? 0.0;
+        const [vx, vy] = to3031(vLon, vLat);
+        const firstRoute = state.routes[0];
+        const fp = firstRoute?.waypoints[0];
+        const lp = firstRoute?.waypoints[firstRoute.waypoints.length - 1];
+        const fpx = fp ? to3031(fp.longitude, fp.latitude) : null;
+        const lpx = lp ? to3031(lp.longitude, lp.latitude) : null;
+        const gridCell = (() => {
+          const g = BASELINE_ENVIRONMENT_GRID;
+          if (!g?.length || !g[0]?.length) return null;
+          const r0 = g[0][0]; const rN = g[g.length - 1][g[0].length - 1];
+          const [bx0, by0] = to3031(r0.longitude, r0.latitude);
+          const [bx1, by1] = to3031(rN.longitude, rN.latitude);
+          return { lat0: r0.latitude, lon0: r0.longitude, latN: rN.latitude, lonN: rN.longitude, x0: bx0.toFixed(0), y0: by0.toFixed(0), x1: bx1.toFixed(0), y1: by1.toFixed(0) };
+        })();
+        return (
+          <div className="absolute top-14 right-4 z-[1100] w-[310px] bg-slate-950/98 border border-emerald-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md font-mono text-[10px] text-slate-300 flex flex-col gap-1.5">
+            <div className="font-bold text-emerald-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-0.5">🛠 Coordinate Pipeline Debug</div>
+            <div className="text-amber-300 font-bold">VESSEL (EPSG:4326)</div>
+            <div>LAT: {vLat.toFixed(6)}°  LON: {vLon.toFixed(6)}°</div>
+            <div className="text-amber-300 font-bold mt-1">VESSEL (EPSG:3031)</div>
+            <div>X: {vx.toFixed(1)} m   Y: {vy.toFixed(1)} m</div>
+            <div className="text-sky-300 font-bold mt-1">CURSOR (EPSG:4326)</div>
+            <div>{cursorCoords ? `LAT: ${cursorCoords.lat.toFixed(5)}°  LON: ${cursorCoords.lon.toFixed(5)}°` : 'Move mouse over map'}</div>
+            {fp && <>
+              <div className="text-cyan-300 font-bold mt-1">ROUTE[0] FIRST WP (4326)</div>
+              <div>LAT: {fp.latitude.toFixed(5)}  LON: {fp.longitude.toFixed(5)}</div>
+              <div className="text-cyan-300 font-bold">ROUTE[0] FIRST WP (3031)</div>
+              <div>X: {fpx![0].toFixed(1)}  Y: {fpx![1].toFixed(1)}</div>
+              <div className="text-cyan-300 font-bold">ROUTE[0] LAST WP (3031)</div>
+              <div>X: {lpx![0].toFixed(1)}  Y: {lpx![1].toFixed(1)}</div>
+            </>}
+            {gridCell && <>
+              <div className="text-violet-300 font-bold mt-1">ENV GRID BOUNDS (4326)</div>
+              <div>NW: ({gridCell.lat0}°, {gridCell.lon0}°)</div>
+              <div>SE: ({gridCell.latN}°, {gridCell.lonN}°)</div>
+              <div className="text-violet-300 font-bold">ENV GRID BOUNDS (3031)</div>
+              <div>NW: ({gridCell.x0}, {gridCell.y0})</div>
+              <div>SE: ({gridCell.x1}, {gridCell.y1})</div>
+            </>}
+            <div className="text-slate-500 text-[9px] mt-1 border-t border-slate-800 pt-1">
+              All POLARIS overlays: EPSG:4326 → EPSG:3031 via ol/proj transform()
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Measure HUD */}
       {isMeasuring && (

@@ -382,7 +382,7 @@ export const IceIntelligenceScreen: React.FC<IceIntelligenceScreenProps> = ({ st
 
       {/* Center Canvas View */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#060B14] relative">
-        <div className="flex-1 w-full h-full relative overflow-hidden flex items-center justify-center">
+        <div className="flex-1 w-full h-full relative overflow-hidden">
           <PolarMap state={state} />
 
           <div className="absolute top-4 glass-panel px-4 py-1.5 rounded-full border border-sky-400/40 flex items-center gap-2.5 shadow-xl">
