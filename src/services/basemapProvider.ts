@@ -10,7 +10,7 @@ import Point from 'ol/geom/Point';
 import { Style, Fill, Stroke, Text } from 'ol/style';
 import { transform } from 'ol/proj';
 
-export type BasemapSourceType = 'BAS_CARTOGRAPHIC_VECTOR' | 'NASA_GIBS_WMTS' | 'GBIF_POLAR_TILE' | 'OFFLINE_VECTOR';
+export type BasemapSourceType = 'BAS_CARTOGRAPHIC_VECTOR' | 'NASA_GIBS_WMTS' | 'GBIF_POLAR_TILE';
 
 export interface BasemapProviderConfig {
   sourceType: BasemapSourceType;

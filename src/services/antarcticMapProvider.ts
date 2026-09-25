@@ -10,7 +10,7 @@ import LineString from 'ol/geom/LineString';
 import { Style, Fill, Stroke, Text } from 'ol/style';
 import { transform } from 'ol/proj';
 
-export type BasemapSourceType = 'BAS_ANTARCTIC' | 'NASA_GIBS_WMTS' | 'OFFLINE_VECTOR';
+export type BasemapSourceType = 'BAS_ANTARCTIC' | 'NASA_GIBS_WMTS';
 
 export interface BasemapProviderConfig {
   sourceType: BasemapSourceType;
@@ -71,7 +71,6 @@ function applyTileNoDataCleaning(source: XYZ, oceanRGB: [number, number, number]
  *
  * Online:  BAS Antarctic & Southern Ocean basemap (real tile service)
  * Fallback: NASA GIBS Blue Marble
- * Offline: Vector drawing mode (real geographic vectors, NO circular mask)
  */
 export class AntarcticMapProvider {
   private config: BasemapProviderConfig;
@@ -91,16 +90,12 @@ export class AntarcticMapProvider {
   /**
    * Creates the primary basemap layer in native EPSG:3031.
    */
-  public createBasemapLayer(): TileLayer<XYZ> | VectorLayer<VectorSource> {
-    if (this.config.sourceType === 'BAS_ANTARCTIC') {
-      return this.createBASLayer();
-    }
-
+  public createBasemapLayer(): TileLayer<XYZ> {
     if (this.config.sourceType === 'NASA_GIBS_WMTS') {
       return this.createNASAGIBSLayer();
     }
 
-    return this.createOfflineVectorLayer();
+    return this.createBASLayer();
   }
 
   // ─── BAS Antarctic & Southern Ocean (Official Tile Service) ────────────────
@@ -165,102 +160,6 @@ export class AntarcticMapProvider {
       source,
       zIndex: 1,
     });
-  }
-
-  // ─── Offline Mission Vector Layer (No circular ocean disk, real geography) ──
-  private createOfflineVectorLayer(): VectorLayer<VectorSource> {
-    const source = new VectorSource();
-    const to3031 = (lon: number, lat: number) =>
-      transform([lon, lat], 'EPSG:4326', 'EPSG:3031') as [number, number];
-
-    // 1. Antarctic Continent Landmass (Detailed coastline polygon in EPSG:4326 -> 3031)
-    const antarcticPoints: [number, number][] = [
-      [-63.8, -63.3], [-57.0, -63.5], [-55.5, -66.0], [-60.0, -68.5],
-      [-65.0, -68.0], [-70.0, -71.5], [-75.0, -74.0], [-80.0, -78.0],
-      [-90.0, -74.0], [-105.0, -74.5], [-120.0, -74.0], [-135.0, -75.0],
-      [-150.0, -76.5], [-165.0, -77.5], [-180.0, -78.0], [165.0, -77.0],
-      [150.0, -69.0], [135.0, -66.5], [120.0, -66.8], [105.0, -66.0],
-      [90.0, -66.5], [75.0, -69.0], [60.0, -67.5], [45.0, -67.8],
-      [30.0, -70.0], [15.0, -70.2], [0.0, -70.0], [-15.0, -72.0],
-      [-30.0, -75.0], [-45.0, -77.5], [-60.0, -75.5], [-63.8, -63.3],
-    ];
-    const contPoly = antarcticPoints.map(([lon, lat]) => to3031(lon, lat));
-    const landFeat = new Feature({ geometry: new Polygon([contPoly]) });
-    landFeat.setStyle(
-      new Style({
-        fill: new Fill({ color: 'rgba(255, 255, 255, 0.96)' }),
-        stroke: new Stroke({ color: '#0284C7', width: 1.8 }),
-      })
-    );
-    source.addFeature(landFeat);
-
-    // 2. Major Ice Shelves (Ronne-Filchner & Ross)
-    const ronneIceShelf: [number, number][] = [
-      [-60.0, -75.5], [-45.0, -77.5], [-30.0, -75.0], [-50.0, -82.0], [-80.0, -78.0], [-60.0, -75.5]
-    ];
-    const rFeat = new Feature({ geometry: new Polygon([ronneIceShelf.map(([lon, lat]) => to3031(lon, lat))]) });
-    rFeat.setStyle(new Style({ fill: new Fill({ color: 'rgba(224, 242, 254, 0.70)' }), stroke: new Stroke({ color: '#38BDF8', width: 1.2, lineDash: [4, 4] }) }));
-    source.addFeature(rFeat);
-
-    const rossIceShelf: [number, number][] = [
-      [-165.0, -77.5], [165.0, -77.0], [175.0, -84.0], [-155.0, -84.0], [-165.0, -77.5]
-    ];
-    const rossFeat = new Feature({ geometry: new Polygon([rossIceShelf.map(([lon, lat]) => to3031(lon, lat))]) });
-    rossFeat.setStyle(new Style({ fill: new Fill({ color: 'rgba(224, 242, 254, 0.70)' }), stroke: new Stroke({ color: '#38BDF8', width: 1.2, lineDash: [4, 4] }) }));
-    source.addFeature(rossFeat);
-
-    // 3. Research Stations & Labels
-    const stations = [
-      { name: 'SOUTH POLE (Amundsen-Scott)', lat: -90, lon: 0, color: '#EF4444' },
-      { name: 'Palmer Station (US)', lat: -64.77, lon: -64.05, color: '#0284C7' },
-      { name: 'Rothera Station (UK)', lat: -67.57, lon: -68.13, color: '#0284C7' },
-      { name: 'McMurdo Station (US)', lat: -77.85, lon: 166.67, color: '#0284C7' },
-      { name: 'Mawson Station (AU)', lat: -67.60, lon: 62.87, color: '#0284C7' },
-      { name: 'Davis Station (AU)', lat: -68.58, lon: 77.97, color: '#0284C7' },
-      { name: 'Casey Station (AU)', lat: -66.28, lon: 110.53, color: '#0284C7' },
-    ];
-
-    stations.forEach((st) => {
-      const f = new Feature({ geometry: new Point(to3031(st.lon, st.lat)) });
-      f.setStyle(
-        new Style({
-          text: new Text({
-            text: `★ ${st.name}`,
-            font: 'bold 9px "JetBrains Mono", monospace',
-            fill: new Fill({ color: st.color }),
-            stroke: new Stroke({ color: '#FFFFFF', width: 2.5 }),
-            offsetY: st.lat === -90 ? -12 : -8,
-          }),
-        })
-      );
-      source.addFeature(f);
-    });
-
-    // 4. Geographic Seas Labels
-    const seas = [
-      { name: 'WEDDELL SEA', lat: -72, lon: -45 },
-      { name: 'ROSS SEA', lat: -75, lon: 175 },
-      { name: 'AMUNDSEN SEA', lat: -72, lon: -115 },
-      { name: 'BELLINGSHAUSEN SEA', lat: -70, lon: -85 },
-      { name: 'DAVIS SEA', lat: -66, lon: 92 },
-    ];
-
-    seas.forEach((sea) => {
-      const f = new Feature({ geometry: new Point(to3031(sea.lon, sea.lat)) });
-      f.setStyle(
-        new Style({
-          text: new Text({
-            text: sea.name,
-            font: 'bold 10px "Inter", sans-serif',
-            fill: new Fill({ color: 'rgba(3, 105, 161, 0.70)' }),
-            stroke: new Stroke({ color: 'rgba(255, 255, 255, 0.85)', width: 2 }),
-          }),
-        })
-      );
-      source.addFeature(f);
-    });
-
-    return new VectorLayer({ source, zIndex: 1 });
   }
 }
 

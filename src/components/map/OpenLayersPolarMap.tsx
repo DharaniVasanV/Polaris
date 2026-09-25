@@ -653,7 +653,6 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           {([
             ['BAS_ANTARCTIC', '🗺️ BAS Antarctic & Southern Ocean', '(Real official basemap)'],
             ['NASA_GIBS_WMTS', '🌍 NASA GIBS Blue Marble', '(Bathymetry + hillshade)'],
-            ['OFFLINE_VECTOR', '📡 Offline Mission Vector', '(No network required)'],
           ] as [BasemapSourceType, string, string][]).map(([type, label, sub]) => (
             <button key={type} onClick={() => switchBasemap(type)}
               className={`p-2 rounded-lg text-left transition-colors flex items-start gap-2 ${basemapType === type ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'}`}>
