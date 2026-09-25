@@ -45,29 +45,31 @@ proj3031.setExtent([-4898635, -4898635, 4898635, 4898635]);
 const _to3031 = (lon: number, lat: number): [number, number] =>
   transform([lon, lat], 'EPSG:4326', 'EPSG:3031') as [number, number];
 
-// ─── Antarctic initial fit extent ──────────────────────────────────────
-// Hardcoded EPSG:3031 extent that encompasses 55°S → 90°S (all longitudes).
-// Using 55°S gives a generous Southern Ocean margin beyond the 60°S ring,
-// ensuring the full peninsula, Ross Sea and Weddell Sea are visible.
-// In EPSG:3031: 60°S ring radius ≈ 2,623,000 m; 55°S ring ≈ 3,333,000 m.
+// ─── Antarctic Navigation Extent (AntarcticMapViewController) ──────────────
+// Hard camera boundary. In EPSG:3031 (South Pole at origin):
+//   55°S circle radius ≈ 3,333,000 m — adding ~10% safety margin = 3,700,000 m
+//   This ensures full Southern Ocean margin, Ross Sea, and Weddell Sea visible.
 //
-// The user-provided value [-3333134, -3333134, 3333134, 3333134] is correct.
-// We expand by one step to [-3500000, -3500000, 3500000, 3500000] for padding.
-const ANTARCTIC_FIT_EXTENT: [number, number, number, number] =
-  [-3500000, -3500000, 3500000, 3500000];
+// ALL three map modes (BAS, GIBS, Offline Vector) share this single constant.
+// NEVER derive the camera from data layers, vessel, or raster footprints.
+const ANTARCTIC_NAV_EXTENT: [number, number, number, number] =
+  [-3700000, -3700000, 3700000, 3700000];
 
-// Helper: apply the initial fit with updateSize first so pixel dimensions
-// reflect the actual container size after the dashboard layout is complete.
+const ANTARCTIC_MIN_ZOOM = 1;
+const ANTARCTIC_MAX_ZOOM = 12;
+
+/** Fit the OL View to the full Antarctic operating area. */
 function fitAntarctica(map: Map) {
   map.updateSize();
   const size = map.getSize();
-  map.getView().fit(ANTARCTIC_FIT_EXTENT, {
+  map.getView().fit(ANTARCTIC_NAV_EXTENT, {
     size,
-    padding: [40, 40, 40, 40],
+    padding: [20, 20, 20, 20],
     nearest: true,
     duration: 0,
   });
 }
+
 
 interface Props {
   state: PolarisAppState;
@@ -122,14 +124,19 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     const s = srcRef.current;
 
     // ── LAYER 0: Full-Rectangle Southern Ocean Background ──────────────────
-    // IMPORTANT: The BAS tile service has a circular raster coverage extent in
-    // EPSG:3031. Where tiles have no data (the four rectangular corners), they
-    // render transparent — this looks like CSS "circular clipping" but is actually
-    // just the raster data boundary showing the container background color.
-    // Fix: add a solid Southern Ocean color rectangle covering the full viewport
-    // extent at z-index 0 so every pixel has the correct geographic ocean color.
-    const OCEAN_COLOR = '#DCEAF0'; // Light Antarctic ocean blue-gray (user spec)
-    const OCEAN_HALF = 6000000;
+    //
+    // The BAS & GIBS rasters have a circular geographic coverage in EPSG:3031.
+    // Where their tiles have no data (four rectangular corners of the canvas),
+    // they render transparent — this exposes whatever is behind.
+    //
+    // Fix: fill the ENTIRE possible viewport with a solid Southern Ocean color
+    // at z-index 0. The rectangle is ±8,500,000 m (2× the NAV extent), which
+    // guarantees it is always larger than the visible canvas at any zoom level
+    // within the camera constraint.
+    //
+    // This is NOT fake Antarctica. It is simply the background canvas color.
+    const OCEAN_COLOR = '#DCEAF0';
+    const OCEAN_HALF = 8_500_000; // large enough to fill ANY viewport within the constraint
     const oceanRect = new Feature({
       geometry: new Polygon([[
         [-OCEAN_HALF, -OCEAN_HALF],
@@ -164,31 +171,39 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       ],
       view: new View({
         projection: 'EPSG:3031',
-        center: [0, 0],
+        center: [0, -500000],   // Slightly south of equator — good initial Antarctic view
         zoom: 2,
-        minZoom: 1,
-        maxZoom: 9,
-        extent: [-5200000, -5200000, 5200000, 5200000],
+        minZoom: ANTARCTIC_MIN_ZOOM,
+        maxZoom: ANTARCTIC_MAX_ZOOM,
+        // ─── HARD CAMERA BOUNDARY ───────────────────────────────────────────
+        // `extent` constrains where the view can go.
+        // constrainOnlyCenter: false → the entire VIEWPORT stays within extent
+        //   (default true only constrains the center — edges can still escape)
+        // smoothExtentConstraint: false → zero temporary overscroll
+        //   (without this, OL allows brief drag past the boundary)
+        extent: ANTARCTIC_NAV_EXTENT,
+        constrainOnlyCenter: false,
+        smoothExtentConstraint: false,
+        multiWorld: false,
       }),
       controls: [],
     });
 
     drawGraticule(s.graticule);
 
-    // ── FIT: Wait for the dashboard layout to settle before fitting ──────────
-    // WHY: rendercomplete fires immediately after the first OL render, which
-    // may happen before the React sidebar panels have finished their CSS layout.
-    // If the map container pixel size is wrong at that moment, the fit() call
-    // will produce the wrong zoom level (often zoomed too far in).
-    // FIX: double requestAnimationFrame guarantees we run AFTER the browser
-    // has completed both React render + CSS layout + paint.
+    // ── FIT: double-RAF ensures layout is settled before fit ─────────────────
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         fitAntarctica(map);
+        // After the initial fit, the View extent constraint takes over to
+        // prevent any subsequent pan/zoom into void space.
       });
     });
 
-    // ── ResizeObserver: re-fit when the container is resized (e.g. sidebar toggle)
+    // ── ResizeObserver: re-size on container change without resetting view ────
+    // Only calls updateSize() so OL recalculates pixel dimensions.
+    // Does NOT re-fit, so the user's current pan/zoom position is preserved.
+    // The View extent constraint automatically prevents any void exposure.
     const observer = new ResizeObserver(() => {
       if (!mapRef.current) return;
       mapRef.current.updateSize();
@@ -526,9 +541,9 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
   return (
     // No overflow-hidden, no border-radius — the map must be fully rectangular
     // Background is the ocean color (visible before OL renders and in corners)
-    <div ref={wrapperRef} className="w-full h-full relative" style={{ background: '#C4DDE8' }}>
-      {/* OpenLayers full-rectangle map canvas — background set to ocean color */}
-      <div ref={mapDivRef} className="w-full h-full z-0" style={{ background: '#C4DDE8' }} />
+    <div ref={wrapperRef} className="w-full h-full relative" style={{ background: '#DCEAF0' }}>
+      {/* OpenLayers full-rectangle map canvas */}
+      <div ref={mapDivRef} className="w-full h-full z-0" style={{ background: '#DCEAF0' }} />
 
       {/* ── Left Toolbar ── */}
       <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md">
@@ -539,7 +554,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
             icon: <RotateCcw className="w-4 h-4" />,
             onClick: () => {
               const m = mapRef.current;
-              if (m) { m.updateSize(); m.getView().fit(ANTARCTIC_FIT_EXTENT, { size: m.getSize(), padding: [40, 40, 40, 40], nearest: true, duration: 700 }); }
+              if (m) fitAntarctica(m);
             },
             title: 'Full Antarctica (55°S – 90°S)',
             cls: 'text-amber-400',
@@ -604,7 +619,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         <button
           onClick={() => {
             const m = mapRef.current;
-            if (m) { m.updateSize(); m.getView().fit(ANTARCTIC_FIT_EXTENT, { size: m.getSize(), padding: [40, 40, 40, 40], nearest: true, duration: 600 }); }
+            if (m) fitAntarctica(m);
           }}
           className="px-3 py-1 rounded-lg border border-amber-500/60 bg-amber-950/80 text-amber-300 text-[11px] font-bold hover:bg-amber-900/80 transition-colors shadow-xl backdrop-blur-md flex items-center gap-1.5"
           title="Fit full 55°S – 90°S Antarctica"
@@ -700,11 +715,11 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
                   <div>maxX: {ext ? ext[2].toFixed(0) : '?'}</div>
                   <div>maxY: {ext ? ext[3].toFixed(0) : '?'}</div>
                   <div className="text-lime-300 font-bold mt-1">TARGET EXTENT (EPSG:3031)</div>
-                  <div>-3500000, -3500000, 3500000, 3500000</div>
+                  <div>±3,700,000 m (55°S – 90°S)</div>
                   <div className={`font-bold mt-0.5 ${ext && Math.abs(ext[0]) > 3000000 ? 'text-emerald-400' : 'text-rose-400'}`}>
                     {ext && Math.abs(ext[0]) > 3000000 ? '✓ Extent looks correct' : '✗ Extent too narrow — re-fit needed'}
                   </div>
-                  <button onClick={() => { if (m) { m.updateSize(); m.getView().fit(ANTARCTIC_FIT_EXTENT, { size: m.getSize(), padding: [40,40,40,40], nearest: true, duration: 0 }); }}} className="mt-1 bg-lime-800 hover:bg-lime-700 text-lime-200 px-2 py-1 rounded font-bold text-[10px]">Force Re-fit Antarctica</button>
+                  <button onClick={() => { if (m) fitAntarctica(m); }} className="mt-1 bg-lime-800 hover:bg-lime-700 text-lime-200 px-2 py-1 rounded font-bold text-[10px]">Force Re-fit Antarctica</button>
                 </>
               );
             })()}
