@@ -10,7 +10,7 @@ interface PolarMapProps {
 
 export const PolarMap: React.FC<PolarMapProps> = ({ state, width = '100%', height = '100%' }) => {
   return (
-    <div className="w-full h-full relative overflow-hidden bg-slate-950 flex items-center justify-center">
+    <div className="w-full h-full relative">
       {/* Full Rectangular Antarctic Operational Navigation Map Viewport */}
       <OpenLayersPolarMap state={state} width="100%" height="100%" />
     </div>

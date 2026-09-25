@@ -98,6 +98,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
 
   // Layer sources
   const srcRef = useRef({
+    oceanBg: new VectorSource(),    // Full-rectangle ocean fill (z-index 0)
     graticule: new VectorSource(),
     seaIce: new VectorSource(),
     risk: new VectorSource(),
@@ -124,6 +125,27 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     if (!mapDivRef.current || mapRef.current) return;
     const s = srcRef.current;
 
+    // ── LAYER 0: Full-Rectangle Southern Ocean Background ──────────────────
+    // IMPORTANT: The BAS tile service has a circular raster coverage extent in
+    // EPSG:3031. Where tiles have no data (the four rectangular corners), they
+    // render transparent — this looks like CSS "circular clipping" but is actually
+    // just the raster data boundary showing the container background color.
+    // Fix: add a solid Southern Ocean color rectangle covering the full viewport
+    // extent at z-index 0 so every pixel has the correct geographic ocean color.
+    const OCEAN_COLOR = '#C4DDE8';
+    const OCEAN_HALF = 6000000;
+    const oceanRect = new Feature({
+      geometry: new Polygon([[
+        [-OCEAN_HALF, -OCEAN_HALF],
+        [ OCEAN_HALF, -OCEAN_HALF],
+        [ OCEAN_HALF,  OCEAN_HALF],
+        [-OCEAN_HALF,  OCEAN_HALF],
+        [-OCEAN_HALF, -OCEAN_HALF],
+      ]]),
+    });
+    oceanRect.setStyle(new Style({ fill: new Fill({ color: OCEAN_COLOR }) }));
+    s.oceanBg.addFeature(oceanRect);
+
     // Real BAS Antarctic basemap layer
     const basemapLayer = providerRef.current.createBasemapLayer();
     s.basemapLayer = basemapLayer;
@@ -131,6 +153,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     const map = new Map({
       target: mapDivRef.current,
       layers: [
+        new VectorLayer({ source: s.oceanBg, zIndex: 0 }),
         basemapLayer,
         new VectorLayer({ source: s.graticule, zIndex: 3 }),
         new VectorLayer({ source: s.seaIce, zIndex: 5 }),
@@ -145,11 +168,10 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       ],
       view: new View({
         projection: 'EPSG:3031',
-        center: [0, 0],      // South Pole — will be overridden by fit()
+        center: [0, 0],
         zoom: 2,
         minZoom: 1,
         maxZoom: 9,
-        // Constrain pan so user can't scroll completely off Antarctica
         extent: [-5200000, -5200000, 5200000, 5200000],
       }),
       controls: [],
@@ -463,9 +485,11 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
   };
 
   return (
-    <div ref={wrapperRef} className="w-full h-full relative overflow-hidden bg-slate-950">
-      {/* OpenLayers full-rectangle map canvas */}
-      <div ref={mapDivRef} className="w-full h-full z-0" />
+    // No overflow-hidden, no border-radius — the map must be fully rectangular
+    // Background is the ocean color (visible before OL renders and in corners)
+    <div ref={wrapperRef} className="w-full h-full relative" style={{ background: '#C4DDE8' }}>
+      {/* OpenLayers full-rectangle map canvas — background set to ocean color */}
+      <div ref={mapDivRef} className="w-full h-full z-0" style={{ background: '#C4DDE8' }} />
 
       {/* ── Left Toolbar ── */}
       <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md">
