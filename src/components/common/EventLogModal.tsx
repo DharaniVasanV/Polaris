@@ -10,35 +10,71 @@ interface EventLogModalProps {
 export const EventLogModal: React.FC<EventLogModalProps> = ({ eventLog, isOpen, onClose }) => {
   if (!isOpen) return null;
 
+  const severityStyles: Record<string, { bg: string; color: string; border: string }> = {
+    CRITICAL: { bg: 'var(--critical-bg)', color: 'var(--critical)', border: 'var(--critical-border)' },
+    WARNING:  { bg: 'var(--warning-bg)',  color: 'var(--warning)',  border: 'var(--warning-border)' },
+    INFO:     { bg: 'var(--info-bg)',     color: 'var(--info)',     border: 'var(--border)' },
+    NORMAL:   { bg: 'var(--surface-alt)', color: 'var(--text-muted)', border: 'var(--border)' },
+  };
+
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-3xl bg-[#080E1A] border border-slate-700 rounded-xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden">
-        <div className="px-6 py-4 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <svg className="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <div>
-              <h2 className="text-sm font-bold text-white tracking-wider">POLARIS OPERATIONAL AUDIT LOG</h2>
-              <p className="text-[11px] text-slate-400">Chronological Spatiotemporal Decision-Support Records</p>
-            </div>
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      background: 'rgba(14,35,96,0.4)', backdropFilter: 'blur(4px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24,
+    }}>
+      <div style={{
+        width: '100%', maxWidth: 720, maxHeight: '80vh',
+        background: 'var(--surface-card)', border: '1px solid var(--border)',
+        borderRadius: 'var(--r-xl)', boxShadow: 'var(--shadow-lg)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
+        {/* Header */}
+        <div style={{
+          padding: '16px 20px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>Operational Audit Log</h2>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>Chronological decision-support records</p>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-xl font-bold">&times;</button>
+          <button onClick={onClose} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 20, color: 'var(--text-muted)', lineHeight: 1,
+          }}>×</button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex flex-col gap-2.5 flex-1">
-          {eventLog.map((log) => (
-            <div key={log.id} className="p-3 rounded-lg bg-slate-950/70 border border-slate-800/80 flex items-start gap-3 text-xs">
-              <span className="font-mono text-[11px] text-slate-400 whitespace-nowrap pt-0.5">{log.simulationTimeFormatted}</span>
-              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border whitespace-nowrap ${
-                log.severity === 'CRITICAL' ? 'bg-rose-950 text-rose-400 border-rose-500/40' : log.severity === 'WARNING' ? 'bg-amber-950 text-amber-400 border-amber-500/40' : 'bg-cyan-950 text-cyan-400 border-cyan-500/40'
-              }`}>{log.category}</span>
-              <span className="text-slate-200 leading-relaxed flex-1">{log.message}</span>
-            </div>
-          ))}
+        {/* Log entries */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {eventLog.map(log => {
+            const s = severityStyles[log.severity] || severityStyles.NORMAL;
+            return (
+              <div key={log.id} style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10,
+                padding: '10px 12px', borderRadius: 'var(--r-md)',
+                background: 'var(--surface-alt)', border: '1px solid var(--border)',
+              }}>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', whiteSpace: 'nowrap', paddingTop: 1 }}>{log.simulationTimeFormatted}</span>
+                <span style={{
+                  padding: '1px 6px', borderRadius: 4, fontSize: 10, fontWeight: 700,
+                  background: s.bg, color: s.color, border: `1px solid ${s.border}`,
+                  whiteSpace: 'nowrap',
+                }}>{log.category}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, flex: 1 }}>{log.message}</span>
+              </div>
+            );
+          })}
         </div>
 
-        <div className="px-6 py-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
-          <span>Logged <strong className="text-white">{eventLog.length}</strong> events in session</span>
-          <button onClick={onClose} className="btn-secondary !py-1 text-xs">Close Audit Log</button>
+        {/* Footer */}
+        <div style={{
+          padding: '12px 20px', borderTop: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+            <strong style={{ color: 'var(--text-primary)' }}>{eventLog.length}</strong> events logged
+          </span>
+          <button onClick={onClose} className="btn btn-secondary btn-sm">Close</button>
         </div>
       </div>
     </div>

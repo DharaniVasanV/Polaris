@@ -1,49 +1,123 @@
 import React from 'react';
 import { PolarisAppState } from '../types/state';
-import { ModelTransparency } from '../components/common/ModelTransparency';
 
-interface SettingsScreenProps {
-  state: PolarisAppState;
+interface Props { state: PolarisAppState; }
+
+function DR({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '6px 0', borderBottom: '1px solid var(--border)', fontSize: 13 }}>
+      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{value}</span>
+    </div>
+  );
 }
 
-export const SettingsScreen: React.FC<SettingsScreenProps> = ({ state }) => {
+function SettingsCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="flex-1 w-full bg-[#060B14] p-6 flex flex-col gap-6 overflow-y-auto text-xs text-slate-300">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-4">
-        <div>
-          <h2 className="text-lg font-bold text-white tracking-wider">SYSTEM CONFIGURATION &amp; PARAMETERS</h2>
-          <p className="text-xs text-slate-400">Vessel Safety Envelope, Risk Model Weights &amp; Prototype Telemetry</p>
-        </div>
-      </div>
+    <div className="p-card" style={{ padding: 20 }}>
+      <h3 className="section-label" style={{ marginBottom: 16 }}>{title}</h3>
+      {children}
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="glass-panel p-5 rounded-xl border border-slate-800 flex flex-col gap-4">
-          <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">Vessel Profile &amp; Hard Safety Limits</span>
-          <div className="flex flex-col gap-3">
-            <div className="flex flex-col gap-1"><label className="text-[11px] text-slate-400">Vessel Name</label><input type="text" value={state.vessel.name} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono" readOnly /></div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1"><label className="text-[11px] text-slate-400">Safe SIC (%)</label><input type="number" value={state.vessel.safeSicThresholdPercent} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono" readOnly /></div>
-              <div className="flex flex-col gap-1"><label className="text-[11px] text-slate-400">Iceberg Buffer (km)</label><input type="number" value={state.vessel.icebergSafetyBufferKm} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono" readOnly /></div>
-              <div className="flex flex-col gap-1"><label className="text-[11px] text-slate-400">Max Wave (m)</label><input type="number" value={state.vessel.maxSafeWaveHeightMeters} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono" readOnly /></div>
-              <div className="flex flex-col gap-1"><label className="text-[11px] text-slate-400">Safety Depth Margin (m)</label><input type="number" value={state.vessel.safetyDepthMarginMeters} className="px-3 py-2 rounded-lg bg-slate-900 border border-slate-700 text-white font-mono" readOnly /></div>
+export const SettingsScreen: React.FC<Props> = ({ state }) => {
+  return (
+    <div className="page-scroll">
+      <div className="page-container">
+        {/* Page header */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Settings</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            Vessel safety envelope, risk model weights, and system configuration.
+          </p>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))', gap: 20 }}>
+
+          {/* Vessel Profile */}
+          <SettingsCard title="VESSEL PROFILE & SAFETY LIMITS">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Vessel Name</label>
+                <input type="text" value={state.vessel.name} className="p-input" readOnly />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Ice Class</label>
+                  <input type="text" value={state.vessel.iceClass} className="p-input" readOnly />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Draft (m)</label>
+                  <input type="number" value={state.vessel.draftMeters} className="p-input" readOnly />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>SIC Threshold (%)</label>
+                  <input type="number" value={state.vessel.safeSicThresholdPercent} className="p-input" readOnly />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Iceberg Buffer (km)</label>
+                  <input type="number" value={state.vessel.icebergSafetyBufferKm} className="p-input" readOnly />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Max Wave (m)</label>
+                  <input type="number" value={state.vessel.maxSafeWaveHeightMeters} className="p-input" readOnly />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 4 }}>Safety Depth Margin (m)</label>
+                  <input type="number" value={state.vessel.safetyDepthMarginMeters} className="p-input" readOnly />
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </SettingsCard>
 
-        <div className="glass-panel p-5 rounded-xl border border-slate-800 flex flex-col gap-4">
-          <span className="text-xs font-bold text-sky-400 uppercase tracking-wider">Spatiotemporal Risk Engine Weights</span>
-          <div className="flex flex-col gap-2.5">
-            <div className="flex justify-between items-center text-[11px]"><span className="text-slate-300">Sea-Ice Risk Weight:</span><strong className="text-sky-400 font-mono">{state.riskWeights.seaIceWeight.toFixed(2)} (35%)</strong></div>
-            <div className="flex justify-between items-center text-[11px]"><span className="text-slate-300">Iceberg Drift &amp; Uncertainty:</span><strong className="text-sky-400 font-mono">{state.riskWeights.icebergWeight.toFixed(2)} (30%)</strong></div>
-            <div className="flex justify-between items-center text-[11px]"><span className="text-slate-300">Wave &amp; Swell Risk:</span><strong className="text-sky-400 font-mono">{state.riskWeights.waveWeight.toFixed(2)} (15%)</strong></div>
-            <div className="flex justify-between items-center text-[11px]"><span className="text-slate-300">Wind Risk:</span><strong className="text-sky-400 font-mono">{state.riskWeights.windWeight.toFixed(2)} (10%)</strong></div>
-            <div className="flex justify-between items-center text-[11px]"><span className="text-slate-300">Current Vector Risk:</span><strong className="text-sky-400 font-mono">{state.riskWeights.currentWeight.toFixed(2)} (5%)</strong></div>
-            <div className="flex justify-between items-center text-[11px]"><span className="text-slate-300">Temporal Horizon Uncertainty:</span><strong className="text-sky-400 font-mono">{state.riskWeights.uncertaintyWeight.toFixed(2)} (5%)</strong></div>
-          </div>
+          {/* Risk Weights */}
+          <SettingsCard title="RISK ENGINE WEIGHTS">
+            <DR label="Sea-Ice Weight" value={`${state.riskWeights.seaIceWeight.toFixed(2)} (35%)`} />
+            <DR label="Iceberg Drift" value={`${state.riskWeights.icebergWeight.toFixed(2)} (30%)`} />
+            <DR label="Wave & Swell" value={`${state.riskWeights.waveWeight.toFixed(2)} (15%)`} />
+            <DR label="Wind Risk" value={`${state.riskWeights.windWeight.toFixed(2)} (10%)`} />
+            <DR label="Ocean Current" value={`${state.riskWeights.currentWeight.toFixed(2)} (5%)`} />
+            <DR label="Forecast Uncertainty" value={`${state.riskWeights.uncertaintyWeight.toFixed(2)} (5%)`} />
+            <div style={{ marginTop: 12, padding: '8px 12px', borderRadius: 'var(--r-md)', background: 'var(--blue-50)', fontSize: 11, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+              Weights are configured in the backend risk fusion engine and applied to the spatiotemporal composite risk field.
+            </div>
+          </SettingsCard>
+
+          {/* System */}
+          <SettingsCard title="SYSTEM INFORMATION">
+            <DR label="Frontend" value="React 18 + TypeScript" />
+            <DR label="Map Engine" value="OpenLayers (EPSG:3031)" />
+            <DR label="Backend" value="Python FastAPI + PyTorch" />
+            <DR label="Basemap" value="BAS Polar WMTS" />
+            <DR label="Projection" value="Antarctic Polar Stereographic" />
+            <DR label="Version" value="Prototype v2.4" />
+          </SettingsCard>
+
+          {/* Models */}
+          <SettingsCard title="MODEL TRANSPARENCY">
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              <p style={{ marginBottom: 8 }}>
+                <strong>GRU Iceberg Drift:</strong> Trained on 271,906 sequences from BYU/NIC Antarctic iceberg tracking database.
+                Predicts 24–72h trajectory vectors with expanding uncertainty radii.
+              </p>
+              <p style={{ marginBottom: 8 }}>
+                <strong>ConvLSTM2D Sea-Ice:</strong> Spatiotemporal grid-based SIC% forecasting at five horizons (0h, 6h, 12h, 18h, 24h).
+                Resolution: 25 km across the Southern Ocean operational sector.
+              </p>
+              <p style={{ marginBottom: 8 }}>
+                <strong>Weather MLP:</strong> PyTorch multi-layer perceptron classifier estimating severe weather probability
+                from wind speed, wave height, atmospheric pressure, and temperature inputs.
+              </p>
+              <p>
+                <strong>Time-Aware A*:</strong> Multi-objective pathfinding that queries future risk states at each waypoint's estimated arrival time,
+                producing Pareto-optimal route candidates balancing safety, fuel, and ETA.
+              </p>
+            </div>
+          </SettingsCard>
+
         </div>
       </div>
-
-      <ModelTransparency />
     </div>
   );
 };

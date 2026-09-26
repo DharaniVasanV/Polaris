@@ -3,95 +3,136 @@ import { polarisStore } from '../store/polarisStore';
 
 export const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('captain@polaris.ai');
-  const [password, setPassword] = useState('polaris2026');
+  const [pass, setPass] = useState('polarisdemo');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    polarisStore.login(email, password);
-  };
-
-  const handleOfflineLogin = () => {
-    polarisStore.emergencyOfflineLogin();
+    setLoading(true);
+    setError('');
+    setTimeout(() => {
+      polarisStore.login(email, pass);
+      const s = polarisStore.getState();
+      if (!s.isAuthenticated) setError('Invalid credentials.');
+      setLoading(false);
+    }, 500);
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#040810] flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Background ambient radar grid */}
-      <div className="absolute inset-0 opacity-15 pointer-events-none bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px]"></div>
-
-      {/* Decorative polar coordinates */}
-      <div className="absolute top-8 left-8 text-[11px] font-mono text-slate-500 hidden sm:block">
-        <div>POLAR SECTOR: 69°22'S, 76°11'E</div>
-        <div>ANTARCTIC TREATY REGION</div>
-      </div>
-      <div className="absolute top-8 right-8 text-[11px] font-mono text-slate-500 hidden sm:block text-right">
-        <div>VESSEL CLASS: PC3 POLAR ICEBREAKER</div>
-        <div>STATION APPROACH: BHARATI / MAITRI</div>
-      </div>
-
-      <div className="glass-panel w-full max-w-md bg-[#0A111E]/95 border border-sky-500/30 rounded-2xl shadow-[0_0_50px_rgba(56,189,248,0.15)] p-8 relative z-10 flex flex-col gap-6">
-        <div className="flex flex-col items-center text-center gap-2">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-cyan-700 flex items-center justify-center border border-sky-400/40 shadow-[0_0_20px_rgba(56,189,248,0.4)]">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
+    <div style={{
+      display: 'grid', gridTemplateColumns: '1fr 1fr',
+      minHeight: '100vh', fontFamily: 'var(--font-sans)',
+    }}>
+      {/* Left — Antarctic visual */}
+      <div style={{
+        position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(160deg, var(--navy-800), var(--blue-500))',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        padding: '60px 48px',
+      }}>
+        <img
+          src="/assets/antarctica/hero-antarctica.png"
+          alt=""
+          style={{
+            position: 'absolute', inset: 0,
+            width: '100%', height: '100%', objectFit: 'cover',
+            opacity: 0.3, mixBlendMode: 'luminosity',
+          }}
+        />
+        <div style={{ position: 'relative', zIndex: 2 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="18" height="18" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+              </svg>
+            </div>
+            <span style={{ fontWeight: 900, fontSize: 20, letterSpacing: '0.12em', color: 'white' }}>POLARIS</span>
           </div>
-          <h1 className="text-2xl font-black tracking-widest text-white mt-2">POLARIS</h1>
-          <p className="text-xs font-semibold text-sky-400 tracking-wide">Intelligent Antarctic Navigation Co-Pilot</p>
-          <p className="text-[11px] text-slate-400 max-w-xs mt-1">Antarctic Maritime Spatiotemporal Decision-Support Console</p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4 text-xs">
-          <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-slate-300 uppercase tracking-wider text-[10px]">Officer / Scientist Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950/90 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-sky-400"
-              placeholder="captain@polaris.ai"
-              required
-            />
+          <h2 style={{ fontSize: 28, fontWeight: 700, color: 'white', lineHeight: 1.3, maxWidth: 400, marginBottom: 16 }}>
+            Predictive Ocean–Ice Learning for Antarctic Route Intelligence
+          </h2>
+          <p style={{ fontSize: 14, color: 'rgba(219,230,245,0.7)', maxWidth: 380, lineHeight: 1.6 }}>
+            AI-powered decision support for research vessel navigation in the Southern Ocean.
+          </p>
+          <div style={{
+            marginTop: 32, fontFamily: 'var(--font-mono)', fontSize: 11,
+            color: 'rgba(219,230,245,0.4)', display: 'flex', gap: 20,
+          }}>
+            <span>EPSG:3031</span>
+            <span>60°S — 90°S</span>
+            <span>PROTOTYPE v2.4</span>
           </div>
-
-          <div className="flex flex-col gap-1.5">
-            <label className="font-semibold text-slate-300 uppercase tracking-wider text-[10px]">Security Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-lg bg-slate-950/90 border border-slate-700 text-white font-mono text-xs focus:outline-none focus:border-sky-400"
-              placeholder="••••••••••••"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="btn-primary !py-3 w-full justify-center text-xs font-bold tracking-wider mt-2 shadow-[0_0_15px_rgba(2,132,199,0.4)]"
-          >
-            SIGN IN VIA SATELLITE LINK &rarr;
-          </button>
-
-          <button
-            type="button"
-            onClick={handleOfflineLogin}
-            className="w-full py-2.5 px-4 rounded-lg bg-amber-950/60 hover:bg-amber-900/80 border border-amber-500/50 text-amber-300 font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(245,158,11,0.2)]"
-          >
-            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
-            </svg>
-            EMERGENCY OFFLINE LOGIN (CACHED DATA)
-          </button>
-        </form>
-
-        <div className="p-3 rounded-lg bg-slate-950/60 border border-slate-800 text-[10px] text-slate-400 text-center leading-relaxed">
-          <strong className="text-sky-300">Operational Notice:</strong> AI recommends; Captain / Ice Navigator makes the final operational decision.
         </div>
       </div>
 
-      <div className="absolute bottom-4 text-[10px] text-slate-600 font-mono">
-        POLARIS PROTOTYPE &bull; SMART INDIA HACKATHON
+      {/* Right — Auth card */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: '48px', background: 'var(--surface)',
+      }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+          <div style={{ marginBottom: 32 }}>
+            <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>
+              Operations Access
+            </h1>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+              Sign in to the POLARIS mission console.
+            </p>
+          </div>
+
+          <form onSubmit={submit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>Username</label>
+              <input
+                type="text" value={email} onChange={e => setEmail(e.target.value)}
+                className="p-input"
+                autoComplete="username" autoFocus
+              />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginBottom: 6 }}>Password</label>
+              <input
+                type="password" value={pass} onChange={e => setPass(e.target.value)}
+                className="p-input"
+                autoComplete="current-password"
+              />
+            </div>
+
+            {error && (
+              <div style={{
+                padding: '8px 12px', borderRadius: 'var(--r-md)',
+                background: 'var(--critical-bg)', border: '1px solid var(--critical-border)',
+                fontSize: 12, color: 'var(--critical)',
+              }}>{error}</div>
+            )}
+
+            <button type="submit" disabled={loading} className="btn btn-primary btn-lg" style={{ width: '100%', marginTop: 4 }}>
+              {loading ? 'Authenticating…' : 'Sign In'}
+            </button>
+          </form>
+
+          <div style={{
+            marginTop: 16, padding: '10px 12px', borderRadius: 'var(--r-md)',
+            background: 'var(--blue-50)', border: '1px solid var(--border)',
+            fontSize: 11, color: 'var(--text-muted)', textAlign: 'center',
+          }}>
+            Demo Environment · Credentials pre-filled
+          </div>
+
+          <div style={{ marginTop: 24, textAlign: 'center' }}>
+            <button
+              onClick={() => polarisStore.setScreen('LANDING')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontSize: 13, color: 'var(--blue-500)', fontWeight: 600,
+              }}
+            >← Back to POLARIS</button>
+          </div>
+        </div>
       </div>
     </div>
   );

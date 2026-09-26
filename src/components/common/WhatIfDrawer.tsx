@@ -9,6 +9,15 @@ interface WhatIfDrawerProps {
   onClose: () => void;
 }
 
+function DR({ label, value, accent }: { label: string; value: React.ReactNode; accent?: boolean }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', fontSize: 12 }}>
+      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
+      <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: accent ? 'var(--info)' : 'var(--text-primary)' }}>{value}</span>
+    </div>
+  );
+}
+
 export const WhatIfDrawer: React.FC<WhatIfDrawerProps> = ({ state, isOpen, onClose }) => {
   if (!isOpen) return null;
 
@@ -29,7 +38,6 @@ export const WhatIfDrawer: React.FC<WhatIfDrawerProps> = ({ state, isOpen, onClo
     } else if (selectedScenarioType === 'ICEBERG_CLEARANCE') {
       params = { iceberg_delta_lat: 1.5 };
     }
-
     await polarisStore.simulateWhatIfScenario(selectedScenarioType, params);
   };
 
@@ -43,316 +51,210 @@ export const WhatIfDrawer: React.FC<WhatIfDrawerProps> = ({ state, isOpen, onClo
   const isSimulating = Boolean(state.isSimulatingWhatIf);
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex justify-end">
-      <div className="glass-panel w-full max-w-2xl bg-[#080E1B] border-l border-cyan-500/40 h-full p-6 flex flex-col gap-5 overflow-y-auto shadow-[-10px_0_40px_rgba(6,182,212,0.25)]">
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 500,
+      background: 'rgba(14,35,96,0.4)', backdropFilter: 'blur(4px)',
+      display: 'flex', justifyContent: 'flex-end',
+    }}>
+      <div style={{
+        width: '100%', maxWidth: 560, height: '100%',
+        background: 'var(--surface-card)', borderLeft: '1px solid var(--border)',
+        boxShadow: 'var(--shadow-lg)',
+        display: 'flex', flexDirection: 'column', overflow: 'hidden',
+      }}>
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-cyan-950 flex items-center justify-center border border-cyan-500/40">
-              <svg className="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-              </svg>
-            </div>
+        <div style={{
+          padding: '16px 20px', borderBottom: '1px solid var(--border)',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        }}>
+          <div>
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>What-If Engine</h2>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>Backend counterfactual simulation & sensitivity analysis</p>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: 'var(--text-muted)' }}>×</button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: 'flex', borderBottom: '1px solid var(--border)', padding: '0 20px' }}>
+          {(['SIMULATION', 'SENSITIVITY'] as const).map(tab => (
+            <button key={tab} onClick={() => setActiveTab(tab)} style={{
+              padding: '10px 16px', border: 'none', cursor: 'pointer',
+              borderBottom: activeTab === tab ? '2px solid var(--navy-800)' : '2px solid transparent',
+              background: 'none', fontSize: 12, fontWeight: activeTab === tab ? 700 : 500,
+              color: activeTab === tab ? 'var(--navy-800)' : 'var(--text-muted)',
+            }}>
+              {tab === 'SIMULATION' ? 'Scenario Simulation' : 'Sensitivity Sweep'}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Controls */}
+          <div style={{ padding: 16, borderRadius: 'var(--r-lg)', background: 'var(--surface-alt)', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
-              <h2 className="text-base font-bold text-white tracking-wider">WHAT-IF SCENARIO &amp; SENSITIVITY ENGINE</h2>
-              <p className="text-[11px] text-slate-400">Authoritative Backend Counterfactual Simulation &amp; Decision Boundary Analysis</p>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 6 }}>PERTURBATION TYPE</label>
+              <select value={selectedScenarioType} onChange={e => setSelectedScenarioType(e.target.value as BackendScenarioType)}
+                className="p-input" style={{ fontSize: 12, fontFamily: 'var(--font-sans)' }}>
+                <option value="ICEBERG_DRIFT">Iceberg Drift — Encroach on corridor</option>
+                <option value="SEA_ICE_INCREASE">Sea-Ice Expansion — Rapid SIC increase</option>
+                <option value="WEATHER_DETERIORATION">Weather Deterioration — Gale / high sea</option>
+                <option value="ICEBERG_CLEARANCE">Iceberg Clearance — Hazard deflected</option>
+                <option value="SAFETY_PRIORITY_CHANGE">Objective: Extreme Safety Priority</option>
+                <option value="EFFICIENCY_PRIORITY_CHANGE">Objective: Transit Time Priority</option>
+              </select>
             </div>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-white text-2xl font-bold">&times;</button>
-        </div>
 
-        {/* Tab Selection */}
-        <div className="flex border-b border-slate-800 gap-2">
-          <button
-            onClick={() => setActiveTab('SIMULATION')}
-            className={`pb-2 px-3 text-xs font-bold transition-colors ${
-              activeTab === 'SIMULATION' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Scenario Simulation
-          </button>
-          <button
-            onClick={() => setActiveTab('SENSITIVITY')}
-            className={`pb-2 px-3 text-xs font-bold transition-colors ${
-              activeTab === 'SENSITIVITY' ? 'text-cyan-400 border-b-2 border-cyan-400' : 'text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            Decision Sensitivity Sweep
-          </button>
-        </div>
-
-        {/* Configuration Controls */}
-        <div className="p-4 rounded-xl bg-slate-950/80 border border-slate-800 flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Select Counterfactual Perturbation</label>
-            <select
-              value={selectedScenarioType}
-              onChange={(e) => setSelectedScenarioType(e.target.value as BackendScenarioType)}
-              className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400"
-            >
-              <option value="ICEBERG_DRIFT">ICEBERG DRIFT — Encroach On Navigation Track</option>
-              <option value="SEA_ICE_INCREASE">SEA-ICE EXPANSION — Rapid Concentration Increase</option>
-              <option value="WEATHER_DETERIORATION">WEATHER DETERIORATION — Synoptic Gale / High Sea State</option>
-              <option value="ICEBERG_CLEARANCE">ICEBERG CLEARANCE — Hazard Deflected Out of Lead</option>
-              <option value="SAFETY_PRIORITY_CHANGE">OBJECTIVE SHIFT — Extreme Safety Priority</option>
-              <option value="EFFICIENCY_PRIORITY_CHANGE">OBJECTIVE SHIFT — Transit Time &amp; Distance Priority</option>
-            </select>
-          </div>
-
-          {/* Dynamic Parameter Sliders */}
-          {selectedScenarioType === 'ICEBERG_DRIFT' && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Iceberg Drift Magnitude:</span>
-                <span className="font-mono text-cyan-400 font-bold">{icebergShiftKm} km</span>
+            {selectedScenarioType === 'ICEBERG_DRIFT' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Drift Magnitude</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--info)' }}>{icebergShiftKm} km</span>
+                </div>
+                <input type="range" min="10" max="120" step="5" value={icebergShiftKm}
+                  onChange={e => setIcebergShiftKm(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--blue-500)' }} />
+                <p style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 4 }}>Shifts iceberg coordinates toward corridor to test standoff clearance.</p>
               </div>
-              <input
-                type="range"
-                min="10"
-                max="120"
-                step="5"
-                value={icebergShiftKm}
-                onChange={(e) => setIcebergShiftKm(Number(e.target.value))}
-                className="w-full accent-cyan-400"
-              />
-              <span className="text-[10px] text-slate-500">Shifts active iceberg coordinates toward intended corridor to test standoff clearance.</span>
-            </div>
-          )}
-
-          {selectedScenarioType === 'SEA_ICE_INCREASE' && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Sea-Ice Concentration Delta:</span>
-                <span className="font-mono text-cyan-400 font-bold">+{sicIncreasePercent}%</span>
+            )}
+            {selectedScenarioType === 'SEA_ICE_INCREASE' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>SIC Delta</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--info)' }}>+{sicIncreasePercent}%</span>
+                </div>
+                <input type="range" min="5" max="40" step="5" value={sicIncreasePercent}
+                  onChange={e => setSicIncreasePercent(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--blue-500)' }} />
               </div>
-              <input
-                type="range"
-                min="5"
-                max="40"
-                step="5"
-                value={sicIncreasePercent}
-                onChange={(e) => setSicIncreasePercent(Number(e.target.value))}
-                className="w-full accent-cyan-400"
-              />
-              <span className="text-[10px] text-slate-500">Adds concentration across polar cells; triggers EXCESSIVE_SEA_ICE (NO-GO) if threshold exceeded.</span>
-            </div>
-          )}
-
-          {selectedScenarioType === 'WEATHER_DETERIORATION' && (
-            <div className="flex flex-col gap-1.5">
-              <div className="flex justify-between text-xs text-slate-300">
-                <span>Direct Weather Risk Delta:</span>
-                <span className="font-mono text-cyan-400 font-bold">+{weatherDelta.toFixed(2)}</span>
+            )}
+            {selectedScenarioType === 'WEATHER_DETERIORATION' && (
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ color: 'var(--text-muted)' }}>Weather Risk Delta</span>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--info)' }}>+{weatherDelta.toFixed(2)}</span>
+                </div>
+                <input type="range" min="0.05" max="0.50" step="0.05" value={weatherDelta}
+                  onChange={e => setWeatherDelta(Number(e.target.value))}
+                  style={{ width: '100%', accentColor: 'var(--blue-500)' }} />
               </div>
-              <input
-                type="range"
-                min="0.05"
-                max="0.50"
-                step="0.05"
-                value={weatherDelta}
-                onChange={(e) => setWeatherDelta(Number(e.target.value))}
-                className="w-full accent-cyan-400"
-              />
-              <span className="text-[10px] text-slate-500">Directly escalates Weather MLP risk score [0, 1] across the corridor.</span>
-            </div>
-          )}
-
-          <div className="flex gap-3">
-            {activeTab === 'SIMULATION' ? (
-              <button
-                onClick={handleRunSimulation}
-                disabled={isSimulating}
-                className="btn-primary flex-1 !py-2.5 text-xs font-bold flex items-center justify-center gap-2"
-              >
-                {isSimulating ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 text-white" viewBox="0 0 24 24" fill="none">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                    Recomputing Risk, Safety &amp; Routes...
-                  </>
-                ) : (
-                  'RUN WHAT-IF ANALYSIS'
-                )}
-              </button>
-            ) : (
-              <button
-                onClick={handleRunSensitivity}
-                className="btn-primary flex-1 !py-2.5 text-xs font-bold bg-purple-600 hover:bg-purple-500"
-              >
-                RUN DECISION SENSITIVITY SWEEP
-              </button>
             )}
 
-            <button
-              onClick={() => polarisStore.clearWhatIfSimulation()}
-              className="btn-secondary !py-2.5 text-xs"
-            >
-              Reset
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {activeTab === 'SIMULATION' ? (
+                <button onClick={handleRunSimulation} disabled={isSimulating} className="btn btn-primary" style={{ flex: 1 }}>
+                  {isSimulating ? 'Recomputing…' : 'Run What-If Analysis'}
+                </button>
+              ) : (
+                <button onClick={handleRunSensitivity} className="btn btn-primary" style={{ flex: 1, background: '#7C68C8', borderColor: '#7C68C8' }}>
+                  Run Sensitivity Sweep
+                </button>
+              )}
+              <button onClick={() => polarisStore.clearWhatIfSimulation()} className="btn btn-secondary">Reset</button>
+            </div>
           </div>
+
+          {/* Simulation Results */}
+          {activeTab === 'SIMULATION' && whatIf && comp && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="section-label">BACKEND COMPARISON</span>
+                <span className={`badge ${comp.route_changed ? 'badge-warning' : 'badge-safe'}`}>
+                  ROUTE {comp.route_changed ? 'CHANGED' : 'MAINTAINED'}
+                </span>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {/* Baseline */}
+                <div className="p-card" style={{ padding: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 8, letterSpacing: '0.04em' }}>BASELINE</div>
+                  <DR label="Profile" value={comp.baseline_profile} />
+                  <DR label="Distance" value={`${comp.baseline_distance_nm.toFixed(1)} nm`} />
+                  <DR label="Transit" value={`${comp.baseline_transit_hours.toFixed(1)} h`} />
+                  <DR label="Avg Risk" value={`${comp.baseline_average_risk.toFixed(1)}/100`} />
+                  <DR label="Exposure" value={comp.baseline_weighted_risk_exposure.toFixed(1)} />
+                  <DR label="Berg Clear." value={comp.baseline_iceberg_clearance_km != null ? `${comp.baseline_iceberg_clearance_km.toFixed(1)} km` : 'N/A'} />
+                  <DR label="Peak SIC" value={`${comp.baseline_max_sic_percent.toFixed(1)}%`} />
+                  <DR label="Fuel" value={comp.baseline_fuel_proxy.toFixed(1)} />
+                </div>
+
+                {/* Scenario */}
+                <div className="p-card" style={{ padding: 12, borderColor: 'var(--blue-200)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--info)', marginBottom: 8, letterSpacing: '0.04em' }}>WHAT-IF</div>
+                  <DR label="Profile" value={comp.scenario_profile} accent />
+                  <DR label="Distance" value={<>{comp.scenario_distance_nm.toFixed(1)} nm <small style={{ color: 'var(--info)' }}>({comp.distance_diff_nm >= 0 ? '+' : ''}{comp.distance_diff_nm.toFixed(1)})</small></>} />
+                  <DR label="Transit" value={<>{comp.scenario_transit_hours.toFixed(1)} h <small style={{ color: 'var(--info)' }}>({comp.transit_time_diff_hours >= 0 ? '+' : ''}{comp.transit_time_diff_hours.toFixed(1)})</small></>} />
+                  <DR label="Avg Risk" value={<>{comp.scenario_average_risk.toFixed(1)}/100 <small style={{ color: 'var(--info)' }}>({comp.average_risk_diff >= 0 ? '+' : ''}{comp.average_risk_diff.toFixed(1)})</small></>} />
+                  <DR label="Exposure" value={<>{comp.scenario_weighted_risk_exposure.toFixed(1)} <small style={{ color: 'var(--info)' }}>({comp.risk_exposure_change_percent >= 0 ? '+' : ''}{comp.risk_exposure_change_percent.toFixed(1)}%)</small></>} />
+                  <DR label="Berg Clear." value={comp.scenario_iceberg_clearance_km != null ? `${comp.scenario_iceberg_clearance_km.toFixed(1)} km` : 'N/A'} />
+                  <DR label="Peak SIC" value={`${comp.scenario_max_sic_percent.toFixed(1)}%`} />
+                  <DR label="Fuel" value={comp.scenario_fuel_proxy.toFixed(1)} />
+                </div>
+              </div>
+
+              {/* Decision explanation */}
+              <div style={{ padding: 12, borderRadius: 'var(--r-md)', background: 'var(--blue-50)', border: '1px solid var(--border)', fontSize: 12 }}>
+                <div style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <svg width="14" height="14" fill="none" stroke="var(--info)" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                  Decision Synthesis
+                </div>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 6 }}>{whatIf.dynamic_decision_explanation}</p>
+                <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--info)', paddingTop: 6, borderTop: '1px solid var(--border)' }}>
+                  Action: {whatIf.operational_recommendation}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Sensitivity Results */}
+          {activeTab === 'SENSITIVITY' && sens && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span className="section-label">SENSITIVITY ANALYSIS</span>
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>Inflection Points: <strong>{sens.inflection_points_found}</strong></span>
+              </div>
+
+              <div style={{ overflowX: 'auto', borderRadius: 'var(--r-md)', border: '1px solid var(--border)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--surface-alt)', borderBottom: '1px solid var(--border)' }}>
+                      {['Step', sens.parameter_name, 'Recommended', 'Dist', 'Exposure', 'Decision'].map(h => (
+                        <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sens.sweep_points.map((pt, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border)', background: pt.route_changed_from_baseline ? 'var(--warning-bg)' : 'transparent' }}>
+                        <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>{pt.step_index}</td>
+                        <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: 'var(--info)' }}>{pt.parameter_label}</td>
+                        <td style={{ padding: '6px 10px', fontWeight: 600, color: 'var(--text-primary)' }}>{pt.recommended_profile}</td>
+                        <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)' }}>{pt.total_distance_nm.toFixed(1)}</td>
+                        <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)' }}>{pt.weighted_risk_exposure.toFixed(1)}</td>
+                        <td style={{ padding: '6px 10px' }}>
+                          <span className={`badge ${pt.route_changed_from_baseline ? 'badge-warning' : 'badge-safe'}`} style={{ fontSize: 9 }}>
+                            {pt.route_changed_from_baseline ? 'DETOURED' : 'MAINTAINED'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div style={{ padding: 12, borderRadius: 'var(--r-md)', background: '#F3F0FF', border: '1px solid #E0DAFF', fontSize: 12 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>Decision Boundary: </strong>
+                <span style={{ color: 'var(--text-secondary)' }}>{sens.decision_boundary_explanation}</span>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* What-If Simulation Results */}
-        {activeTab === 'SIMULATION' && whatIf && comp && (
-          <div className="glass-panel p-4 rounded-xl border border-slate-800 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-sky-400 uppercase tracking-wider">Authoritative Backend Comparison</span>
-              <span className={`px-2 py-0.5 text-[9px] font-extrabold rounded ${
-                comp.route_changed ? 'bg-amber-950 text-amber-300 border border-amber-500/50' : 'bg-emerald-950 text-emerald-300 border border-emerald-500/50'
-              }`}>
-                ROUTE CHANGED: {comp.route_changed ? 'YES (DETOUR SELECTED)' : 'NO (BASELINE ROBUST)'}
-              </span>
-            </div>
-
-            {/* Side by Side Metric Cards */}
-            <div className="grid grid-cols-2 gap-3 text-xs">
-              {/* Baseline Card */}
-              <div className="p-3.5 rounded-lg bg-slate-950/90 border border-slate-800 flex flex-col gap-2">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">Baseline Route</span>
-                  <span className="text-[10px] text-emerald-400 font-bold">{comp.baseline_profile}</span>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Distance:</span><strong className="font-mono text-white">{comp.baseline_distance_nm.toFixed(1)} NM</strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Transit Time:</span><strong className="font-mono text-white">{comp.baseline_transit_hours.toFixed(1)} h</strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Avg Risk Score:</span><strong className="font-mono text-emerald-400">{comp.baseline_average_risk.toFixed(1)}/100</strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Weighted Exposure:</span><strong className="font-mono text-white">{comp.baseline_weighted_risk_exposure.toFixed(1)}</strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Iceberg Clearance:</span>
-                  <strong className="font-mono text-white">{comp.baseline_iceberg_clearance_km != null ? `${comp.baseline_iceberg_clearance_km.toFixed(1)} km` : 'N/A'}</strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Peak Sea-Ice:</span><strong className="font-mono text-white">{comp.baseline_max_sic_percent.toFixed(1)}%</strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Fuel Proxy Index:</span><strong className="font-mono text-white">{comp.baseline_fuel_proxy.toFixed(1)}</strong>
-                </div>
-              </div>
-
-              {/* Scenario Card */}
-              <div className="p-3.5 rounded-lg bg-slate-950/90 border border-cyan-500/40 flex flex-col gap-2">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-1.5">
-                  <span className="text-[10px] font-bold text-cyan-300 uppercase">What-If Optimal</span>
-                  <span className="text-[10px] text-cyan-400 font-bold">{comp.scenario_profile}</span>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Distance:</span>
-                  <strong className="font-mono text-white">
-                    {comp.scenario_distance_nm.toFixed(1)} NM
-                    <span className="text-[9px] text-cyan-400 ml-1">({comp.distance_diff_nm >= 0 ? '+' : ''}{comp.distance_diff_nm.toFixed(1)})</span>
-                  </strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Transit Time:</span>
-                  <strong className="font-mono text-white">
-                    {comp.scenario_transit_hours.toFixed(1)} h
-                    <span className="text-[9px] text-cyan-400 ml-1">({comp.transit_time_diff_hours >= 0 ? '+' : ''}{comp.transit_time_diff_hours.toFixed(1)})</span>
-                  </strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Avg Risk Score:</span>
-                  <strong className="font-mono text-cyan-300">
-                    {comp.scenario_average_risk.toFixed(1)}/100
-                    <span className="text-[9px] ml-1">({comp.average_risk_diff >= 0 ? '+' : ''}{comp.average_risk_diff.toFixed(1)})</span>
-                  </strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Weighted Exposure:</span>
-                  <strong className="font-mono text-white">
-                    {comp.scenario_weighted_risk_exposure.toFixed(1)}
-                    <span className="text-[9px] text-cyan-400 ml-1">({comp.risk_exposure_change_percent >= 0 ? '+' : ''}{comp.risk_exposure_change_percent.toFixed(1)}%)</span>
-                  </strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Iceberg Clearance:</span>
-                  <strong className="font-mono text-white">
-                    {comp.scenario_iceberg_clearance_km != null ? `${comp.scenario_iceberg_clearance_km.toFixed(1)} km` : 'N/A'}
-                  </strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Peak Sea-Ice:</span><strong className="font-mono text-white">{comp.scenario_max_sic_percent.toFixed(1)}%</strong>
-                </div>
-                <div className="flex justify-between text-slate-300 text-[11px]">
-                  <span>Fuel Proxy Index:</span><strong className="font-mono text-white">{comp.scenario_fuel_proxy.toFixed(1)}</strong>
-                </div>
-              </div>
-            </div>
-
-            {/* Dynamic Runtime Decision Explanation */}
-            <div className="p-3.5 rounded-lg bg-cyan-950/40 border border-cyan-600/40 text-xs flex flex-col gap-1.5 text-cyan-100">
-              <strong className="text-white text-xs flex items-center gap-1.5">
-                <svg className="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                Runtime Decision Synthesis:
-              </strong>
-              <p className="leading-relaxed text-[11px] text-slate-200">{whatIf.dynamic_decision_explanation}</p>
-              <div className="pt-1 text-[11px] text-cyan-300 font-semibold border-t border-cyan-800/40">
-                Action: {whatIf.operational_recommendation}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Sensitivity Sweep Results */}
-        {activeTab === 'SENSITIVITY' && sens && (
-          <div className="glass-panel p-4 rounded-xl border border-slate-800 flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] font-bold text-purple-400 uppercase tracking-wider">Decision Boundary Sensitivity Analysis</span>
-              <span className="text-[10px] text-slate-400">Inflection Points: <strong>{sens.inflection_points_found}</strong></span>
-            </div>
-
-            <div className="overflow-x-auto text-[11px]">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400">
-                    <th className="py-1.5 px-2">Step</th>
-                    <th className="py-1.5 px-2">{sens.parameter_name}</th>
-                    <th className="py-1.5 px-2">Recommended</th>
-                    <th className="py-1.5 px-2">Dist (NM)</th>
-                    <th className="py-1.5 px-2">Exposure</th>
-                    <th className="py-1.5 px-2">Decision</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sens.sweep_points.map((pt, idx) => (
-                    <tr key={idx} className={`border-b border-slate-900 ${pt.route_changed_from_baseline ? 'bg-amber-950/30' : ''}`}>
-                      <td className="py-1.5 px-2 font-mono text-slate-400">{pt.step_index}</td>
-                      <td className="py-1.5 px-2 font-mono text-cyan-300">{pt.parameter_label}</td>
-                      <td className="py-1.5 px-2 text-white font-semibold">{pt.recommended_profile}</td>
-                      <td className="py-1.5 px-2 font-mono text-slate-300">{pt.total_distance_nm.toFixed(1)}</td>
-                      <td className="py-1.5 px-2 font-mono text-slate-300">{pt.weighted_risk_exposure.toFixed(1)}</td>
-                      <td className="py-1.5 px-2">
-                        {pt.route_changed_from_baseline ? (
-                          <span className="text-amber-400 text-[10px] font-bold">DETOURED</span>
-                        ) : (
-                          <span className="text-emerald-400 text-[10px] font-bold">MAINTAINED</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="p-3 rounded-lg bg-purple-950/30 border border-purple-600/30 text-[11px] text-purple-200">
-              <strong className="text-white">Decision Boundary Synthesis: </strong>
-              {sens.decision_boundary_explanation}
-            </div>
-          </div>
-        )}
-
         {/* Footer */}
-        <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
-          <button onClick={() => polarisStore.clearWhatIfSimulation()} className="btn-secondary !py-2 text-xs">Reset All What-If</button>
-          <button onClick={onClose} className="btn-primary !py-2 text-xs">Return to Main View &rarr;</button>
+        <div style={{ padding: '12px 20px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+          <button onClick={() => polarisStore.clearWhatIfSimulation()} className="btn btn-ghost btn-sm">Reset What-If</button>
+          <button onClick={onClose} className="btn btn-primary btn-sm">Close →</button>
         </div>
       </div>
     </div>

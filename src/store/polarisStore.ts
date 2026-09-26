@@ -103,7 +103,7 @@ function createInitialState(): PolarisAppState {
     offlineMode: false,
     demoMode: true,
     presentationMode: false,
-    activeScreen: 'LOGIN',
+    activeScreen: 'LANDING',
 
     snapshotTimeUtc: '12:40 UTC',
     simulationTimeHours: 0,
@@ -218,8 +218,9 @@ class PolarisStore {
   public logout() {
     this.setState(() => ({
       isAuthenticated: false,
-      activeScreen: 'LOGIN',
+      activeScreen: 'LANDING',
     }));
+    this.addEventLog('SYSTEM', 'User signed out. Session cleared.', 'NORMAL');
   }
 
   public setScreen(screen: AppScreen) {
@@ -1045,6 +1046,14 @@ class PolarisStore {
 
   public clearCellInspection() {
     this.setState(() => ({ selectedCellInspection: null }));
+  }
+
+  public setSelectedIceberg(id: string | null) {
+    this.setState(() => ({ selectedIcebergId: id }));
+  }
+
+  public generateRoutes(onComplete?: () => void) {
+    return this.generateRoutesAsync(onComplete);
   }
 }
 

@@ -7,11 +7,15 @@ import { RiskWeights, ValidTimeHorizon } from './risk';
 import { ScenarioId, ScenarioOverlay } from './scenario';
 
 export type AppScreen = 
+  | 'LANDING'
   | 'LOGIN'
   | 'DASHBOARD'
+  | 'MAP'
   | 'VOYAGE_PLANNER'
   | 'ICE_INTELLIGENCE'
   | 'DECISION_CENTER'
+  | 'ROUTES'
+  | 'WHAT_IF'
   | 'FLEET'
   | 'RESEARCH'
   | 'SETTINGS';

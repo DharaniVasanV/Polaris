@@ -17,17 +17,17 @@ import { get as getProjection, transform } from 'ol/proj';
 import proj4 from 'proj4';
 
 import { PolarisAppState, MapLayerState } from '../../types/state';
-import { BASELINE_ENVIRONMENT_GRID } from '../../data/baselineEnvironment';
+import { BASELINE_ENVIRONMENT_GRID, GRID_ROWS, GRID_COLS } from '../../data/baselineEnvironment';
 import { applyScenarioToEnvironment } from '../../simulation/scenarioEngine';
 import { evaluateCellRisk } from '../../simulation/riskEngine';
 import { polarisStore } from '../../store/polarisStore';
-import { haversineDistanceNm, calculateBearing } from '../../utils/geo';
+import { haversineDistanceNm } from '../../utils/geo';
 import { AntarcticMapProvider, BasemapSourceType } from '../../services/antarcticMapProvider';
 import { MapLayerControls } from './MapLayerControls';
 import { MapLegend } from './MapLegend';
 import {
   ZoomIn, ZoomOut, RotateCcw, Navigation,
-  Maximize2, Minimize2, Ruler, Compass, Layers, HelpCircle, Globe,
+  Maximize2, Minimize2, Ruler, Compass, Layers, HelpCircle, Globe, X
 } from 'lucide-react';
 
 // ─── Register EPSG:3031 (WGS 84 / Antarctic Polar Stereographic) ───────────
@@ -37,28 +37,22 @@ proj4.defs(
 );
 register(proj4);
 const proj3031 = getProjection('EPSG:3031')!;
-// Full BAS tile service extent in EPSG:3031
 proj3031.setExtent([-4898635, -4898635, 4898635, 4898635]);
 
-// ─── Geographic helper ────────────────────────────────────────────────────
-// Convert lon/lat (EPSG:4326) → EPSG:3031 [x,y] at module level for extent calc
-const _to3031 = (lon: number, lat: number): [number, number] =>
+// ─── Geo projection helpers ──────────────────────────────────────────────
+const to3031 = (lon: number, lat: number): [number, number] =>
   transform([lon, lat], 'EPSG:4326', 'EPSG:3031') as [number, number];
 
-// ─── Antarctic Navigation Extent (AntarcticMapViewController) ──────────────
-// Hard camera boundary. In EPSG:3031 (South Pole at origin):
-//   55°S circle radius ≈ 3,333,000 m — adding ~10% safety margin = 3,700,000 m
-//   This ensures full Southern Ocean margin, Ross Sea, and Weddell Sea visible.
-//
-// ALL three map modes (BAS, GIBS, Offline Vector) share this single constant.
-// NEVER derive the camera from data layers, vessel, or raster footprints.
+const fromProj = (x: number, y: number): [number, number] =>
+  transform([x, y], 'EPSG:3031', 'EPSG:4326') as [number, number];
+
+// ─── Antarctic Navigation Camera Boundary ─────────────────────────────────
 const ANTARCTIC_NAV_EXTENT: [number, number, number, number] =
   [-3700000, -3700000, 3700000, 3700000];
 
 const ANTARCTIC_MIN_ZOOM = 1;
 const ANTARCTIC_MAX_ZOOM = 12;
 
-/** Fit the OL View to the full Antarctic operating area. */
 function fitAntarctica(map: Map) {
   map.updateSize();
   const size = map.getSize();
@@ -69,7 +63,6 @@ function fitAntarctica(map: Map) {
     duration: 0,
   });
 }
-
 
 interface Props {
   state: PolarisAppState;
@@ -94,9 +87,12 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measureNm, setMeasureNm] = useState(0);
 
-  // Layer sources
+  // Selected cell popover state
+  const [selectedCellInfo, setSelectedCellInfo] = useState<{ row: number; col: number; lat: number; lon: number } | null>(null);
+
+  // Vector Sources
   const srcRef = useRef({
-    oceanBg: new VectorSource(),    // Full-rectangle ocean fill (z-index 0)
+    oceanBg: new VectorSource(),
     graticule: new VectorSource(),
     seaIce: new VectorSource(),
     risk: new VectorSource(),
@@ -106,6 +102,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     route: new VectorSource(),
     vessel: new VectorSource(),
     dest: new VectorSource(),
+    selection: new VectorSource(),
     measure: new VectorSource(),
     basemapLayer: null as any,
     sarLayer: null as ImageLayer<ImageStatic> | null,
@@ -113,30 +110,14 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
 
   const measurePtsRef = useRef<number[][]>([]);
 
-  const to3031 = (lon: number, lat: number): [number, number] =>
-    transform([lon, lat], 'EPSG:4326', 'EPSG:3031') as [number, number];
-  const fromProj = (x: number, y: number): [number, number] =>
-    transform([x, y], 'EPSG:3031', 'EPSG:4326') as [number, number];
-
-  // ─── 1. INIT MAP ──────────────────────────────────────────────────────────
+  // ─── 1. MAP INIT ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mapDivRef.current || mapRef.current) return;
     const s = srcRef.current;
 
-    // ── LAYER 0: Full-Rectangle Southern Ocean Background ──────────────────
-    //
-    // The BAS & GIBS rasters have a circular geographic coverage in EPSG:3031.
-    // Where their tiles have no data (four rectangular corners of the canvas),
-    // they render transparent — this exposes whatever is behind.
-    //
-    // Fix: fill the ENTIRE possible viewport with a solid Southern Ocean color
-    // at z-index 0. The rectangle is ±8,500,000 m (2× the NAV extent), which
-    // guarantees it is always larger than the visible canvas at any zoom level
-    // within the camera constraint.
-    //
-    // This is NOT fake Antarctica. It is simply the background canvas color.
+    // Full-rectangle ocean background
     const OCEAN_COLOR = '#DCEAF0';
-    const OCEAN_HALF = 8_500_000; // large enough to fill ANY viewport within the constraint
+    const OCEAN_HALF = 8_500_000;
     const oceanRect = new Feature({
       geometry: new Polygon([[
         [-OCEAN_HALF, -OCEAN_HALF],
@@ -149,7 +130,6 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     oceanRect.setStyle(new Style({ fill: new Fill({ color: OCEAN_COLOR }) }));
     s.oceanBg.addFeature(oceanRect);
 
-    // Real BAS Antarctic basemap layer
     const basemapLayer = providerRef.current.createBasemapLayer();
     s.basemapLayer = basemapLayer;
 
@@ -164,23 +144,18 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         new VectorLayer({ source: s.noGo, zIndex: 7 }),
         new VectorLayer({ source: s.iceberg, zIndex: 8 }),
         new VectorLayer({ source: s.uncertainty, zIndex: 9 }),
-        new VectorLayer({ source: s.route, zIndex: 10 }),
-        new VectorLayer({ source: s.vessel, zIndex: 11 }),
-        new VectorLayer({ source: s.dest, zIndex: 12 }),
-        new VectorLayer({ source: s.measure, zIndex: 13 }),
+        new VectorLayer({ source: s.selection, zIndex: 10 }),
+        new VectorLayer({ source: s.route, zIndex: 11 }),
+        new VectorLayer({ source: s.vessel, zIndex: 12 }),
+        new VectorLayer({ source: s.dest, zIndex: 13 }),
+        new VectorLayer({ source: s.measure, zIndex: 14 }),
       ],
       view: new View({
         projection: 'EPSG:3031',
-        center: [0, -500000],   // Slightly south of equator — good initial Antarctic view
+        center: [0, -500000],
         zoom: 2,
         minZoom: ANTARCTIC_MIN_ZOOM,
         maxZoom: ANTARCTIC_MAX_ZOOM,
-        // ─── HARD CAMERA BOUNDARY ───────────────────────────────────────────
-        // `extent` constrains where the view can go.
-        // constrainOnlyCenter: false → the entire VIEWPORT stays within extent
-        //   (default true only constrains the center — edges can still escape)
-        // smoothExtentConstraint: false → zero temporary overscroll
-        //   (without this, OL allows brief drag past the boundary)
         extent: ANTARCTIC_NAV_EXTENT,
         constrainOnlyCenter: false,
         smoothExtentConstraint: false,
@@ -191,19 +166,12 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
 
     drawGraticule(s.graticule);
 
-    // ── FIT: double-RAF ensures layout is settled before fit ─────────────────
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         fitAntarctica(map);
-        // After the initial fit, the View extent constraint takes over to
-        // prevent any subsequent pan/zoom into void space.
       });
     });
 
-    // ── ResizeObserver: re-size on container change without resetting view ────
-    // Only calls updateSize() so OL recalculates pixel dimensions.
-    // Does NOT re-fit, so the user's current pan/zoom position is preserved.
-    // The View extent constraint automatically prevents any void exposure.
     const observer = new ResizeObserver(() => {
       if (!mapRef.current) return;
       mapRef.current.updateSize();
@@ -215,25 +183,96 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       if (!isNaN(lat) && !isNaN(lon)) setCursorCoords({ lat, lon });
     });
 
+    // ── Single Click Event (MapInteractionController) ───────────────────────
     map.on('singleclick', (evt) => {
       if ((window as any).__pol_measuring) {
         const pts = [...measurePtsRef.current, evt.coordinate];
         measurePtsRef.current = pts;
         drawMeasure(s.measure, pts);
+        return;
+      }
+
+      // Check if user clicked an iceberg marker first
+      let clickedBergId: string | null = null;
+      map.forEachFeatureAtPixel(evt.pixel, (feature) => {
+        const bergId = feature.get('icebergId');
+        if (bergId) clickedBergId = bergId;
+      });
+
+      if (clickedBergId) {
+        polarisStore.setSelectedIceberg(clickedBergId);
+        return;
+      }
+
+      // Find nearest grid cell in model environment grid
+      const [lon, lat] = fromProj(evt.coordinate[0], evt.coordinate[1]);
+      const grid = applyScenarioToEnvironment(BASELINE_ENVIRONMENT_GRID, polarisStore.getState().activeScenario);
+
+      let bestCell: any = null;
+      let minSqDist = Infinity;
+
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+          const cell = grid[r][c];
+          const dLat = cell.latitude - lat;
+          const dLon = cell.longitude - lon;
+          const sqDist = dLat * dLat + dLon * dLon;
+          if (sqDist < minSqDist) {
+            minSqDist = sqDist;
+            bestCell = cell;
+          }
+        }
+      }
+
+      // Hit tolerance check (approx 2.5 degrees lat/lon max distance)
+      if (bestCell && minSqDist < 6.5) {
+        polarisStore.inspectCell(bestCell.row, bestCell.col, polarisStore.getState().simulationTimeHours);
+        setSelectedCellInfo({
+          row: bestCell.row,
+          col: bestCell.col,
+          lat: bestCell.latitude,
+          lon: bestCell.longitude,
+        });
+
+        // Draw selected cell highlight on selection vector source (2px royal blue outline + fill)
+        s.selection.clear();
+        const r = bestCell.row;
+        const c = bestCell.col;
+        if (r < grid.length - 1 && c < grid[r].length - 1) {
+          const poly: [number, number][] = [
+            to3031(grid[r][c].longitude,     grid[r][c].latitude),
+            to3031(grid[r][c + 1].longitude, grid[r][c + 1].latitude),
+            to3031(grid[r + 1][c + 1].longitude, grid[r + 1][c + 1].latitude),
+            to3031(grid[r + 1][c].longitude, grid[r + 1][c].latitude),
+            to3031(grid[r][c].longitude,     grid[r][c].latitude),
+          ];
+          const f = new Feature({ geometry: new Polygon([poly]) });
+          f.setStyle(new Style({
+            fill: new Fill({ color: 'rgba(65, 91, 177, 0.22)' }),
+            stroke: new Stroke({ color: '#415BB1', width: 2.2 }),
+          }));
+          s.selection.addFeature(f);
+        }
+      } else {
+        s.selection.clear();
+        setSelectedCellInfo(null);
+        polarisStore.clearCellInspection();
       }
     });
 
     mapRef.current = map;
-    return () => { observer.disconnect(); map.setTarget(undefined); mapRef.current = null; };
+    return () => {
+      observer.disconnect();
+      map.setTarget(undefined);
+      mapRef.current = null;
+    };
   }, []);
 
-  // ─── 2. GRATICULE (RESTRAINED - SPEC §12) ───────────────────────────────
-  // Use ONLY: 60°S, 70°S, 80°S, 90°S and major longitudes (0°, 30°E, 60°E, 90°E, 120°E, 150°E, 180°)
-  // Style: 1px, opacity 0.30, muted blue (rgba(51, 102, 153, 0.30))
+  // ─── 2. GRATICULE ────────────────────────────────────────────────────────
   const drawGraticule = (src: VectorSource) => {
     src.clear();
     const LATS = [-60, -70, -80, -90];
-    const CLR = 'rgba(51, 102, 153, 0.30)';
+    const CLR = 'rgba(112, 151, 210, 0.35)';
 
     LATS.forEach((lat) => {
       const ring: [number, number][] = [];
@@ -249,8 +288,8 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           text: new Text({
             text: `${Math.abs(lat)}°S`,
             font: '10px "JetBrains Mono",monospace',
-            fill: new Fill({ color: 'rgba(51, 102, 153, 0.75)' }),
-            stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }),
+            fill: new Fill({ color: '#415BB1' }),
+            stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 2 }),
             offsetY: -8,
           }),
         }));
@@ -267,7 +306,14 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       if (lon % 30 === 0) {
         const txt = lon === 0 ? '0°' : lon === 180 ? '180°' : lon > 0 ? `${lon}°E` : `${Math.abs(lon)}°W`;
         const lf = new Feature({ geometry: new Point(to3031(lon, -58)) });
-        lf.setStyle(new Style({ text: new Text({ text: txt, font: '9px "JetBrains Mono",monospace', fill: new Fill({ color: 'rgba(51, 102, 153, 0.75)' }), stroke: new Stroke({ color: 'rgba(255,255,255,0.70)', width: 2 }) }) }));
+        lf.setStyle(new Style({
+          text: new Text({
+            text: txt,
+            font: '9px "JetBrains Mono",monospace',
+            fill: new Fill({ color: '#415BB1' }),
+            stroke: new Stroke({ color: 'rgba(255,255,255,0.85)', width: 2 }),
+          }),
+        }));
         src.addFeature(lf);
       }
     });
@@ -279,14 +325,14 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     pts.forEach((p, i) => {
       const f = new Feature({ geometry: new Point(p) });
       f.setStyle(new Style({
-        image: new CircleStyle({ radius: 5, fill: new Fill({ color: '#F59E0B' }), stroke: new Stroke({ color: '#fff', width: 1.5 }) }),
-        text: new Text({ text: `P${i + 1}`, font: 'bold 9px monospace', fill: new Fill({ color: '#F59E0B' }), offsetY: -12 }),
+        image: new CircleStyle({ radius: 5, fill: new Fill({ color: '#D89B2B' }), stroke: new Stroke({ color: '#fff', width: 1.5 }) }),
+        text: new Text({ text: `P${i + 1}`, font: 'bold 9px monospace', fill: new Fill({ color: '#D89B2B' }), offsetY: -12 }),
       }));
       src.addFeature(f);
     });
     if (pts.length > 1) {
       const lf = new Feature({ geometry: new LineString(pts) });
-      lf.setStyle(new Style({ stroke: new Stroke({ color: '#F59E0B', width: 2, lineDash: [6, 4] }) }));
+      lf.setStyle(new Style({ stroke: new Stroke({ color: '#D89B2B', width: 2, lineDash: [6, 4] }) }));
       src.addFeature(lf);
       let nm = 0;
       for (let i = 0; i < pts.length - 1; i++) {
@@ -298,7 +344,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     }
   };
 
-  // ─── 4. POLARIS OVERLAYS (RESTRAINED RENDERING) ───────────────────────────
+  // ─── 4. POLARIS OVERLAYS (NO GIANT CIRCLES!) ─────────────────────────────
   useEffect(() => {
     const map = mapRef.current;
     const s = srcRef.current;
@@ -308,7 +354,7 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     const th = state.simulationTimeHours;
     const envGrid = applyScenarioToEnvironment(BASELINE_ENVIRONMENT_GRID, state.activeScenario);
 
-    // ── Sentinel-1 SAR ── ONLY when checkbox ON ──────────────────────────────
+    // ── Sentinel-1 SAR Overlay ──────────────────────────────────────────────
     if (s.sarLayer) { map.removeLayer(s.sarLayer); s.sarLayer = null; }
     if (ly.sentinel1Sar && state.sentinel1ImageAvailable && state.sentinel1ImageUrl) {
       const bbox = state.sentinel1ImageBbox || state.sentinel1ImageMetadata?.image_bbox;
@@ -322,7 +368,6 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
             imageExtent: [Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1)],
             crossOrigin: 'anonymous',
           }),
-          // Restrained Sentinel-1 opacity — basemap must remain visible underneath
           opacity: Math.min(state.sentinel1Opacity ?? 0.52, 0.60),
           zIndex: 4,
         });
@@ -331,17 +376,16 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       }
     }
 
-    // ── Sea Ice & NO-GO (geographic cells only, low opacity) ─────────────────
+    // ── Sea Ice & Risk Grid & NO-GO Zones (Cell-based, NO GIANT CIRCLES) ───
     s.seaIce.clear(); s.risk.clear(); s.noGo.clear();
     if (ly.seaIce || ly.noGoZones) {
-      const thresh = state.vessel.safeSicThresholdPercent;
       for (let r = 0; r < envGrid.length - 1; r++) {
         for (let c = 0; c < envGrid[r].length - 1; c++) {
           const cell = envGrid[r][c];
           if (cell.isLand || cell.isIceShelf) continue;
           const sic = cell.sicValues[th] ?? cell.sicValues[0];
           const risk = evaluateCellRisk(cell, th, state.vessel, state.icebergs);
-          // Geographic cell polygon — 4326 → 3031 for EVERY corner
+
           const poly: [number, number][] = [
             to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
             to3031(envGrid[r][c + 1].longitude, envGrid[r][c + 1].latitude),
@@ -350,28 +394,27 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
             to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
           ];
 
-          // NO-GO: dark red, 0.28 opacity, thin dashed border
+          // NO-GO Zone: dark red cell fill (22% opacity) + thin border
           if (ly.noGoZones && risk.isNoGo) {
             const f = new Feature({ geometry: new Polygon([poly]) });
             f.setStyle(new Style({
-              fill: new Fill({ color: 'rgba(185,28,28,0.28)' }),
-              stroke: new Stroke({ color: 'rgba(220,38,38,0.60)', width: 0.8, lineDash: [4, 4] }),
+              fill: new Fill({ color: 'rgba(201, 75, 75, 0.22)' }),
+              stroke: new Stroke({ color: 'rgba(201, 75, 75, 0.60)', width: 0.8, lineDash: [4, 4] }),
             }));
             s.noGo.addFeature(f);
           }
 
-          // Sea Ice: restrained cyan — basemap must show through clearly
+          // Sea-Ice Concentration Grid: light cyan / blue fill (12-18% opacity)
           if (ly.seaIce && sic > 5) {
-            // Color scale from low to high SIC — all at low opacity so basemap shows through
             let col: string;
-            if (sic >= thresh || risk.totalRisk >= 70) col = 'rgba(239,68,68,0.22)';
-            else if (sic >= 60 || risk.totalRisk >= 50)  col = 'rgba(249,115,22,0.18)';
-            else if (sic >= 30 || risk.totalRisk >= 30)  col = 'rgba(251,191,36,0.16)';
-            else                                           col = 'rgba(56,189,248,0.14)';
+            if (sic >= state.vessel.safeSicThresholdPercent || risk.totalRisk >= 70) col = 'rgba(201, 75, 75, 0.18)';
+            else if (sic >= 60 || risk.totalRisk >= 50)  col = 'rgba(217, 119, 50, 0.16)';
+            else if (sic >= 30 || risk.totalRisk >= 30)  col = 'rgba(216, 155, 43, 0.14)';
+            else                                           col = 'rgba(47, 128, 201, 0.12)';
             const f = new Feature({ geometry: new Polygon([poly]) });
             f.setStyle(new Style({
               fill: new Fill({ color: col }),
-              stroke: new Stroke({ color: 'rgba(6,182,212,0.12)', width: 0.3 }),
+              stroke: new Stroke({ color: 'rgba(47, 128, 201, 0.10)', width: 0.3 }),
             }));
             s.seaIce.addFeature(f);
           }
@@ -379,65 +422,64 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       }
     }
 
-    // ── Icebergs (small, restrained) ────────────────────────────────────────
+    // ── Icebergs (Crisp diamond markers; uncertainty ONLY for selected iceberg) ──
     s.iceberg.clear(); s.uncertainty.clear();
     if (ly.icebergs) {
       state.icebergs.forEach((berg) => {
         const isB22 = berg.id === 'B-22';
-        const isCrit = berg.riskLevel === 'CRITICAL';
+        const isSelected = state.selectedIcebergId ? state.selectedIcebergId === berg.id : isB22;
 
-        // Historical track — thin faded gray
+        // Historical track
         if (ly.icebergForecast && berg.historicalTrack.length > 1) {
           const f = new Feature({ geometry: new LineString(berg.historicalTrack.map(p => to3031(p.longitude, p.latitude))) });
-          f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(100,116,139,0.55)', width: 1 }) }));
+          f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(112, 151, 210, 0.40)', width: 1.2 }) }));
           s.iceberg.addFeature(f);
         }
-        // Forecast track — dashed 1.5px
-        if (ly.icebergForecast && berg.forecastTrack.length > 1) {
-          const col = isCrit ? 'rgba(245,158,11,0.80)' : 'rgba(6,182,212,0.75)';
+        // Forecast track (dashed for selected iceberg)
+        if (ly.icebergForecast && isSelected && berg.forecastTrack.length > 1) {
           const f = new Feature({ geometry: new LineString(berg.forecastTrack.map(p => to3031(p.longitude, p.latitude))) });
-          f.setStyle(new Style({ stroke: new Stroke({ color: col, width: 1.5, lineDash: [5, 4] }) }));
+          f.setStyle(new Style({ stroke: new Stroke({ color: '#3B8FC4', width: 1.8, lineDash: [5, 4] }) }));
           s.iceberg.addFeature(f);
         }
-        // Uncertainty envelopes — thin outline, very low fill opacity
-        if (ly.icebergUncertainty) {
+
+        // Uncertainty Envelopes — ONLY DRAWN FOR SELECTED ICEBERG TO PREVENT MAP CLUTTER
+        if (ly.icebergUncertainty && isSelected) {
           berg.forecastTrack.forEach(pt => {
             if (!pt.horizonHours) return;
             const rad = (pt.uncertaintyRadiusKm || 5) * 1000;
             const f = new Feature({ geometry: new CircleGeom(to3031(pt.longitude, pt.latitude), rad) });
-            const uncFill = isB22 && pt.horizonHours >= 24 ? 'rgba(239,68,68,0.10)' : 'rgba(6,182,212,0.06)';
-            const uncStroke = isB22 && pt.horizonHours >= 24 ? 'rgba(239,68,68,0.50)' : 'rgba(6,182,212,0.40)';
             f.setStyle(new Style({
-              fill: new Fill({ color: uncFill }),
-              stroke: new Stroke({ color: uncStroke, width: 0.8, lineDash: [3, 4] }),
+              fill: new Fill({ color: 'rgba(124, 104, 200, 0.08)' }),
+              stroke: new Stroke({ color: '#7C68C8', width: 1.2, lineDash: [3, 4] }),
             }));
             s.uncertainty.addFeature(f);
           });
         }
 
-        // Iceberg position marker — diamond (RegularShape 4-point)
+        // Iceberg position diamond marker
         const f = new Feature({ geometry: new Point(to3031(berg.currentPosition.longitude, berg.currentPosition.latitude)) });
+        f.set('icebergId', berg.id);
         f.setStyle(new Style({
           image: new RegularShape({
             points: 4,
-            radius: isB22 ? 7 : 5,
-            angle: Math.PI / 4,  // rotated 45° = diamond orientation
-            fill: new Fill({ color: isB22 ? '#EF4444' : '#22D3EE' }),
-            stroke: new Stroke({ color: 'rgba(255,255,255,0.80)', width: 1.5 }),
+            radius: isSelected ? 7 : 5,
+            angle: Math.PI / 4,
+            fill: new Fill({ color: isSelected ? '#3B8FC4' : '#7097D2' }),
+            stroke: new Stroke({ color: '#FFFFFF', width: 1.5 }),
           }),
-          text: isB22 ? new Text({
+          text: isSelected ? new Text({
             text: berg.name,
-            font: '9px "Inter",sans-serif',
-            fill: new Fill({ color: '#FCA5A5' }),
-            stroke: new Stroke({ color: 'rgba(0,0,0,0.7)', width: 2 }),
-            offsetX: 10, offsetY: -8,
+            font: 'bold 10px "Inter",sans-serif',
+            fill: new Fill({ color: 'var(--navy-800)' }),
+            stroke: new Stroke({ color: '#FFFFFF', width: 2.5 }),
+            offsetX: 12, offsetY: -8,
           }) : undefined,
         }));
         s.iceberg.addFeature(f);
       });
     }
 
-    // ── Routes (thin, clean) ──────────────────────────────────────────────
+    // ── Routes (Clean, scientific lines) ───────────────────────────────────
     s.route.clear();
     state.routes.forEach((route) => {
       if (route.type === 'SHORTEST_REJECTED' && !ly.shortestRoute) return;
@@ -447,15 +489,15 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       const isRej = route.type === 'SHORTEST_REJECTED' || route.status === 'REJECTED';
       const isSel = route.id === state.selectedRouteId;
 
-      let col: string, w: number, dash: number[] | undefined, opacity = 1;
+      let col: string, w: number, dash: number[] | undefined;
       if (route.type === 'SAFE_A') {
-        col = '#06B6D4'; w = isSel ? 4.0 : 3.0;                  // cyan — recommended
+        col = '#2F80C9'; w = isSel ? 3.5 : 3.0;
       } else if (route.type === 'ALTERNATIVE_B') {
-        col = '#F59E0B'; w = 2.5; dash = [7, 5];                  // amber dashed — alternative
+        col = '#D89B2B'; w = 2.0; dash = [6, 4];
       } else if (isRej) {
-        col = 'rgba(100,116,139,0.55)'; w = 1.5; dash = [4, 5];  // slate dotted — shortest rejected
+        col = '#7A8795'; w = 2.0; dash = [3, 4];
       } else {
-        col = '#06B6D4'; w = 2.5;
+        col = '#2F80C9'; w = 2.5;
       }
 
       const f = new Feature({ geometry: new LineString(route.waypoints.map(wp => to3031(wp.longitude, wp.latitude))) });
@@ -463,42 +505,42 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       s.route.addFeature(f);
     });
 
-    // Counterfactual route — only when scenario/what-if is active
+    // Scenario Counterfactual Route
     if (state.activeWhatIfResult?.scenario_optimization?.candidate_routes) {
       const opt = state.activeWhatIfResult.scenario_optimization;
       const cands: any[] = opt.candidate_routes || [];
       const rec = cands.find((c: any) => c.route_id === opt.recommended_route_id) || cands[0];
       if (rec?.waypoints?.length) {
         const f = new Feature({ geometry: new LineString(rec.waypoints.map((wp: any) => to3031(wp.longitude, wp.latitude))) });
-        f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(139,92,246,0.85)', width: 2.5, lineDash: [6, 5] }) }));
+        f.setStyle(new Style({ stroke: new Stroke({ color: '#7C68C8', width: 2.5, lineDash: [6, 5] }) }));
         s.route.addFeature(f);
       }
     }
 
-    // ── Vessel (triangle RegularShape, small & precise) ──────────────────────
+    // ── Vessel Position ────────────────────────────────────────────────────
     s.vessel.clear();
     const vLat = state.departureLocation?.latitude ?? -63.0;
     const vLon = state.departureLocation?.longitude ?? 0.0;
     const vf = new Feature({ geometry: new Point(to3031(vLon, vLat)) });
     vf.setStyle(new Style({
       image: new RegularShape({
-        points: 3,       // triangle
+        points: 3,
         radius: 9,
-        angle: 0,        // apex pointing up (north)
+        angle: 0,
         fill: new Fill({ color: '#0EA5E9' }),
-        stroke: new Stroke({ color: 'rgba(15,23,42,0.90)', width: 2 }),
+        stroke: new Stroke({ color: '#0E2360', width: 2 }),
       }),
       text: new Text({
         text: 'VESSEL',
         font: 'bold 9px "JetBrains Mono",monospace',
         fill: new Fill({ color: '#0EA5E9' }),
-        stroke: new Stroke({ color: 'rgba(0,0,0,0.80)', width: 2.5 }),
-        offsetY: -20,
+        stroke: new Stroke({ color: '#FFFFFF', width: 2.5 }),
+        offsetY: -18,
       }),
     }));
     s.vessel.addFeature(vf);
 
-    // ── Destination ───────────────────────────────────────────────────
+    // ── Destination Location ───────────────────────────────────────────────
     s.dest.clear();
     if (state.destinationLocation) {
       const dLat = state.destinationLocation.latitude;
@@ -507,22 +549,22 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       df.setStyle(new Style({
         image: new CircleStyle({
           radius: 7,
-          fill: new Fill({ color: '#F59E0B' }),
-          stroke: new Stroke({ color: 'rgba(255,255,255,0.80)', width: 1.5 }),
+          fill: new Fill({ color: '#D89B2B' }),
+          stroke: new Stroke({ color: '#FFFFFF', width: 1.5 }),
         }),
         text: new Text({
           text: state.destinationLocation.name,
           font: '9px "Inter",sans-serif',
-          fill: new Fill({ color: '#FDE68A' }),
-          stroke: new Stroke({ color: 'rgba(0,0,0,0.80)', width: 2 }),
-          offsetY: 18,
+          fill: new Fill({ color: '#0E2360' }),
+          stroke: new Stroke({ color: '#FFFFFF', width: 2 }),
+          offsetY: 16,
         }),
       }));
       s.dest.addFeature(df);
     }
   }, [state]);
 
-  // ─── 4b. BASEMAP SWITCH ───────────────────────────────────────────────────
+  // ─── BASEMAP SWITCH ───────────────────────────────────────────────────────
   const switchBasemap = (type: BasemapSourceType) => {
     setBasemapType(type);
     setShowBasemapMenu(false);
@@ -532,7 +574,6 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     if (map && s.basemapLayer) {
       map.removeLayer(s.basemapLayer);
       const newLayer = providerRef.current.createBasemapLayer();
-      // Insert at index 1 (above s.oceanBg at index 0)
       map.getLayers().insertAt(1, newLayer);
       s.basemapLayer = newLayer;
     }
@@ -545,39 +586,35 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     return `${d}° ${m}' ${sec}" ${dir}`;
   };
 
-  return (
-    // No overflow-hidden, no border-radius — the map must be fully rectangular
-    // Background is the ocean color (visible before OL renders and in corners)
-    <div ref={wrapperRef} className="w-full h-full relative" style={{ background: '#DCEAF0' }}>
-      {/* OpenLayers full-rectangle map canvas */}
-      <div ref={mapDivRef} className="w-full h-full z-0" style={{ background: '#DCEAF0' }} />
+  const inspection = state.selectedCellInspection;
 
-      {/* ── Left Toolbar ── */}
-      <div className="absolute top-4 left-4 z-[1000] flex flex-col gap-1.5 bg-slate-900/90 border border-slate-800 rounded-xl p-1.5 shadow-2xl backdrop-blur-md">
+  return (
+    <div ref={wrapperRef} className="map-viewport-container" style={{ position: 'relative', width: '100%', height: '100%', background: '#DCEAF0', overflow: 'hidden' }}>
+      {/* OpenLayers Map Canvas */}
+      <div ref={mapDivRef} style={{ width: '100%', height: '100%', zIndex: 0 }} />
+
+      {/* ── Left Toolbar (Light Polar Operations Style) ── */}
+      <div style={{
+        position: 'absolute', top: 16, left: 16, zIndex: 20,
+        display: 'flex', flexDirection: 'column', gap: 6,
+        background: 'var(--surface-card)', border: '1px solid var(--border)',
+        borderRadius: 'var(--r-lg)', padding: 6, boxShadow: 'var(--shadow-md)',
+      }}>
         {[
-          { icon: <ZoomIn className="w-4 h-4" />, onClick: () => mapRef.current?.getView().setZoom((mapRef.current.getView().getZoom() ?? 2) + 0.4), title: 'Zoom In', cls: 'text-sky-400' },
-          { icon: <ZoomOut className="w-4 h-4" />, onClick: () => mapRef.current?.getView().setZoom((mapRef.current.getView().getZoom() ?? 2) - 0.4), title: 'Zoom Out', cls: 'text-sky-400' },
+          { icon: <ZoomIn style={{ width: 16, height: 16 }} />, onClick: () => mapRef.current?.getView().setZoom((mapRef.current.getView().getZoom() ?? 2) + 0.4), title: 'Zoom In' },
+          { icon: <ZoomOut style={{ width: 16, height: 16 }} />, onClick: () => mapRef.current?.getView().setZoom((mapRef.current.getView().getZoom() ?? 2) - 0.4), title: 'Zoom Out' },
+          { icon: <RotateCcw style={{ width: 16, height: 16 }} />, onClick: () => mapRef.current && fitAntarctica(mapRef.current), title: 'Fit Full Antarctica' },
           {
-            icon: <RotateCcw className="w-4 h-4" />,
-            onClick: () => {
-              const m = mapRef.current;
-              if (m) fitAntarctica(m);
-            },
-            title: 'Full Antarctica (55°S – 90°S)',
-            cls: 'text-amber-400',
-          },
-          {
-            icon: <Navigation className="w-4 h-4" />,
+            icon: <Navigation style={{ width: 16, height: 16 }} />,
             onClick: () => {
               const vLat = state.departureLocation?.latitude ?? -63;
               const vLon = state.departureLocation?.longitude ?? 0;
-              mapRef.current?.getView().animate({ center: to3031(vLon, vLat), zoom: 5, duration: 700 });
+              mapRef.current?.getView().animate({ center: to3031(vLon, vLat), zoom: 5, duration: 600 });
             },
             title: 'Locate Vessel',
-            cls: 'text-emerald-400',
           },
           {
-            icon: <Ruler className="w-4 h-4" />,
+            icon: <Ruler style={{ width: 16, height: 16 }} />,
             onClick: () => {
               const next = !isMeasuring;
               setIsMeasuring(next);
@@ -585,214 +622,230 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
               if (!next) { measurePtsRef.current = []; setMeasureNm(0); srcRef.current.measure.clear(); }
             },
             title: 'Measure Distance',
-            cls: isMeasuring ? 'text-white bg-amber-500 rounded-lg' : 'text-amber-400',
           },
           {
-            icon: isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />,
+            icon: isFullscreen ? <Minimize2 style={{ width: 16, height: 16 }} /> : <Maximize2 style={{ width: 16, height: 16 }} />,
             onClick: () => {
               if (!document.fullscreenElement) { wrapperRef.current?.requestFullscreen(); setIsFullscreen(true); }
               else { document.exitFullscreen(); setIsFullscreen(false); }
             },
             title: 'Fullscreen',
-            cls: 'text-slate-300',
           },
         ].map((btn, idx) => (
           <button key={idx} onClick={btn.onClick} title={btn.title}
-            className={`p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 transition-colors ${btn.cls}`}>
+            style={{
+              padding: 8, borderRadius: 'var(--r-md)', border: 'none',
+              background: isMeasuring && btn.title === 'Measure Distance' ? 'var(--blue-500)' : 'transparent',
+              color: isMeasuring && btn.title === 'Measure Distance' ? 'white' : 'var(--text-secondary)',
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={(e) => { if (!(isMeasuring && btn.title === 'Measure Distance')) e.currentTarget.style.background = 'var(--surface-alt)'; }}
+            onMouseLeave={(e) => { if (!(isMeasuring && btn.title === 'Measure Distance')) e.currentTarget.style.background = 'transparent'; }}
+          >
             {btn.icon}
           </button>
         ))}
       </div>
 
-      {/* ── Right Controls ── */}
-      <div className="absolute top-4 right-4 z-[1000] flex gap-2">
+      {/* ── Top-Right Map Controls ── */}
+      <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 20, display: 'flex', gap: 8 }}>
         {[
-          { label: 'Basemap', icon: <Globe className="w-3.5 h-3.5" />, active: showBasemapMenu, onClick: () => { setShowBasemapMenu(v => !v); setShowLayerControls(false); setShowLegend(false); setShowDebug(false); } },
-          { label: 'Layers', icon: <Layers className="w-3.5 h-3.5" />, active: showLayerControls, onClick: () => { setShowLayerControls(v => !v); setShowBasemapMenu(false); setShowLegend(false); setShowDebug(false); } },
-          { label: 'Legend', icon: <HelpCircle className="w-3.5 h-3.5" />, active: showLegend, onClick: () => { setShowLegend(v => !v); setShowLayerControls(false); setShowBasemapMenu(false); setShowDebug(false); } },
-          { label: 'Debug', icon: <Compass className="w-3.5 h-3.5" />, active: showDebug, onClick: () => { setShowDebug(v => !v); setShowLegend(false); setShowLayerControls(false); setShowBasemapMenu(false); } },
+          { label: 'Basemap', icon: <Globe style={{ width: 14, height: 14 }} />, active: showBasemapMenu, onClick: () => { setShowBasemapMenu(v => !v); setShowLayerControls(false); setShowLegend(false); setShowDebug(false); } },
+          { label: 'Layers', icon: <Layers style={{ width: 14, height: 14 }} />, active: showLayerControls, onClick: () => { setShowLayerControls(v => !v); setShowBasemapMenu(false); setShowLegend(false); setShowDebug(false); } },
+          { label: 'Legend', icon: <HelpCircle style={{ width: 14, height: 14 }} />, active: showLegend, onClick: () => { setShowLegend(v => !v); setShowLayerControls(false); setShowBasemapMenu(false); setShowDebug(false); } },
+          { label: 'Debug', icon: <Compass style={{ width: 14, height: 14 }} />, active: showDebug, onClick: () => { setShowDebug(v => !v); setShowLegend(false); setShowLayerControls(false); setShowBasemapMenu(false); } },
         ].map((btn, i) => (
           <button key={i} onClick={btn.onClick}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-bold transition-all shadow-xl backdrop-blur-md flex items-center gap-1.5 ${
-              btn.active ? 'bg-sky-600 border-sky-400 text-white' : 'bg-slate-900/90 border-slate-800 text-sky-400 hover:bg-slate-800/90'
-            }`}>
+            style={{
+              padding: '6px 12px', borderRadius: 'var(--r-md)', border: '1.5px solid var(--border)',
+              background: btn.active ? 'var(--blue-500)' : 'var(--surface-card)',
+              color: btn.active ? 'white' : 'var(--text-primary)',
+              fontSize: 12, fontWeight: 650, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
+              boxShadow: 'var(--shadow-sm)', transition: 'all 0.15s',
+            }}
+          >
             {btn.icon}<span>{btn.label}</span>
           </button>
         ))}
       </div>
 
-      {/* ── Quick Navigation Buttons ── */}
-      <div className="absolute top-14 right-4 z-[1000] flex gap-2">
-        <button
-          onClick={() => {
-            const m = mapRef.current;
-            if (m) fitAntarctica(m);
-          }}
-          className="px-3 py-1 rounded-lg border border-amber-500/60 bg-amber-950/80 text-amber-300 text-[11px] font-bold hover:bg-amber-900/80 transition-colors shadow-xl backdrop-blur-md flex items-center gap-1.5"
-          title="Fit full 55°S – 90°S Antarctica"
-        >
-          🌍 ANTARCTICA
-        </button>
-        <button
-          onClick={() => {
-            const vLat = state.departureLocation?.latitude ?? -63;
-            const vLon = state.departureLocation?.longitude ?? 0;
-            mapRef.current?.getView().animate({ center: to3031(vLon, vLat), zoom: 5, duration: 600 });
-          }}
-          className="px-3 py-1 rounded-lg border border-emerald-500/60 bg-emerald-950/80 text-emerald-300 text-[11px] font-bold hover:bg-emerald-900/80 transition-colors shadow-xl backdrop-blur-md flex items-center gap-1.5"
-          title="Zoom to vessel position"
-        >
-          ⚓ ZOOM TO VESSEL
-        </button>
-      </div>
-
-      {/* Basemap Menu */}
+      {/* Popovers */}
       {showBasemapMenu && (
-        <div className="absolute top-14 right-4 z-[1000] w-[260px] bg-slate-900/95 border border-slate-800 rounded-xl p-3 shadow-2xl backdrop-blur-md flex flex-col gap-2 text-xs">
-          <span className="font-bold text-slate-400 text-[10px] uppercase tracking-wider border-b border-slate-800 pb-1">Antarctic Basemap — EPSG:3031</span>
-          {([
-            ['BAS_ANTARCTIC', '🗺️ BAS Antarctic & Southern Ocean', '(Real official basemap)'],
-            ['NASA_GIBS_WMTS', '🌍 NASA GIBS Blue Marble', '(Bathymetry + hillshade)'],
-          ] as [BasemapSourceType, string, string][]).map(([type, label, sub]) => (
-            <button key={type} onClick={() => switchBasemap(type)}
-              className={`p-2 rounded-lg text-left transition-colors flex items-start gap-2 ${basemapType === type ? 'bg-sky-600 text-white font-bold' : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700/80'}`}>
-              <div>
-                <div>{label}</div>
-                <div className="text-[9px] opacity-70">{sub}</div>
-              </div>
+        <div style={{
+          position: 'absolute', top: 56, right: 16, zIndex: 20, width: 260,
+          background: 'var(--surface-card)', border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)', padding: 12, boxShadow: 'var(--shadow-md)',
+          display: 'flex', flexDirection: 'column', gap: 8, fontSize: 12,
+        }}>
+          <span className="section-label" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>BASEMAP SOURCE — EPSG:3031</span>
+          {[
+            ['BAS_ANTARCTIC', '🗺️ BAS Antarctic Tile Provider', '(Official Antarctic Basemap)'],
+            ['NASA_GIBS_WMTS', '🌍 NASA GIBS Blue Marble', '(Bathymetry & Hillshade)'],
+          ].map(([type, label, sub]) => (
+            <button key={type} onClick={() => switchBasemap(type as BasemapSourceType)}
+              style={{
+                padding: '8px 10px', borderRadius: 'var(--r-md)', textAlign: 'left', border: '1px solid',
+                background: basemapType === type ? 'var(--blue-50)' : 'var(--surface)',
+                borderColor: basemapType === type ? 'var(--blue-200)' : 'var(--border)',
+                color: basemapType === type ? 'var(--navy-800)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ fontWeight: 600 }}>{label}</div>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)' }}>{sub}</div>
             </button>
           ))}
         </div>
       )}
 
       {showLayerControls && (
-        <div className="absolute top-14 right-4 z-[1000] max-w-xs">
-          <MapLayerControls layers={state.mapLayers} onToggleLayer={(k) => polarisStore.toggleMapLayer(k)} sarAvailable={state.sentinel1ImageAvailable} sarProvenance="RECENT" hasScenarioRoute={!!state.activeWhatIfResult?.scenario_optimization} />
+        <div style={{ position: 'absolute', top: 56, right: 16, zIndex: 20 }}>
+          <MapLayerControls
+            layers={state.mapLayers}
+            onToggleLayer={(k) => polarisStore.toggleMapLayer(k)}
+            sarAvailable={state.sentinel1ImageAvailable}
+            sarProvenance="RECENT"
+            hasScenarioRoute={!!state.activeWhatIfResult?.scenario_optimization}
+          />
         </div>
       )}
+
       {showLegend && (
-        <div className="absolute top-14 right-4 z-[1000] max-w-xs">
+        <div style={{ position: 'absolute', top: 56, right: 16, zIndex: 20 }}>
           <MapLegend />
         </div>
       )}
 
-      {/* Debug overlay — shows coordinate pipeline values for alignment verification */}
-      {showDebug && (() => {
-        const vLat = state.departureLocation?.latitude ?? -63.0;
-        const vLon = state.departureLocation?.longitude ?? 0.0;
-        const [vx, vy] = to3031(vLon, vLat);
-        const firstRoute = state.routes[0];
-        const fp = firstRoute?.waypoints[0];
-        const lp = firstRoute?.waypoints[firstRoute.waypoints.length - 1];
-        const fpx = fp ? to3031(fp.longitude, fp.latitude) : null;
-        const lpx = lp ? to3031(lp.longitude, lp.latitude) : null;
-        const gridCell = (() => {
-          const g = BASELINE_ENVIRONMENT_GRID;
-          if (!g?.length || !g[0]?.length) return null;
-          const r0 = g[0][0]; const rN = g[g.length - 1][g[0].length - 1];
-          const [bx0, by0] = to3031(r0.longitude, r0.latitude);
-          const [bx1, by1] = to3031(rN.longitude, rN.latitude);
-          return { lat0: r0.latitude, lon0: r0.longitude, latN: rN.latitude, lonN: rN.longitude, x0: bx0.toFixed(0), y0: by0.toFixed(0), x1: bx1.toFixed(0), y1: by1.toFixed(0) };
-        })();
-        return (
-          <div className="absolute top-14 right-4 z-[1100] w-[320px] bg-slate-950/98 border border-emerald-500/50 rounded-xl p-3 shadow-2xl backdrop-blur-md font-mono text-[10px] text-slate-300 flex flex-col gap-1.5">
-            <div className="font-bold text-emerald-400 uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-0.5">🛠 Coordinate Pipeline Debug</div>
-
-            {/* Live map view info */}
-            {(() => {
-              const m = mapRef.current;
-              if (!m) return <div className="text-slate-500">Map not yet initialized</div>;
-              const v = m.getView();
-              const sz = m.getSize();
-              const ext = v.calculateExtent(sz);
-              const ctr = v.getCenter();
-              const res = v.getResolution();
-              return (
-                <>
-                  <div className="text-lime-300 font-bold">MAP CONTAINER SIZE</div>
-                  <div>{sz ? `${sz[0]}×${sz[1]} px` : 'unknown'}</div>
-                  <div className="text-lime-300 font-bold mt-1">VIEW CENTER (EPSG:3031)</div>
-                  <div>X: {ctr ? ctr[0].toFixed(0) : '?'} m  Y: {ctr ? ctr[1].toFixed(0) : '?'} m</div>
-                  <div className="text-lime-300 font-bold mt-1">VIEW RESOLUTION</div>
-                  <div>{res ? res.toFixed(1) : '?'} m/px</div>
-                  <div className="text-lime-300 font-bold mt-1">CURRENT EXTENT (EPSG:3031)</div>
-                  <div>minX: {ext ? ext[0].toFixed(0) : '?'}</div>
-                  <div>minY: {ext ? ext[1].toFixed(0) : '?'}</div>
-                  <div>maxX: {ext ? ext[2].toFixed(0) : '?'}</div>
-                  <div>maxY: {ext ? ext[3].toFixed(0) : '?'}</div>
-                  <div className="text-lime-300 font-bold mt-1">TARGET EXTENT (EPSG:3031)</div>
-                  <div>±3,700,000 m (55°S – 90°S)</div>
-                  <div className={`font-bold mt-0.5 ${ext && Math.abs(ext[0]) > 3000000 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {ext && Math.abs(ext[0]) > 3000000 ? '✓ Extent looks correct' : '✗ Extent too narrow — re-fit needed'}
-                  </div>
-                  <button onClick={() => { if (m) fitAntarctica(m); }} className="mt-1 bg-lime-800 hover:bg-lime-700 text-lime-200 px-2 py-1 rounded font-bold text-[10px]">Force Re-fit Antarctica</button>
-                </>
-              );
-            })()}
-
-            <div className="border-t border-slate-800 mt-1 pt-1" />
-            <div className="text-amber-300 font-bold">VESSEL (EPSG:4326)</div>
-            <div>LAT: {vLat.toFixed(6)}°  LON: {vLon.toFixed(6)}°</div>
-            <div className="text-amber-300 font-bold mt-1">VESSEL (EPSG:3031)</div>
-            <div>X: {vx.toFixed(1)} m   Y: {vy.toFixed(1)} m</div>
-            <div className="text-sky-300 font-bold mt-1">CURSOR (EPSG:4326)</div>
-            <div>{cursorCoords ? `LAT: ${cursorCoords.lat.toFixed(5)}°  LON: ${cursorCoords.lon.toFixed(5)}°` : 'Move mouse over map'}</div>
-            {fp && <>
-              <div className="text-cyan-300 font-bold mt-1">ROUTE[0] FIRST WP (4326)</div>
-              <div>LAT: {fp.latitude.toFixed(5)}  LON: {fp.longitude.toFixed(5)}</div>
-              <div className="text-cyan-300 font-bold">ROUTE[0] FIRST WP (3031)</div>
-              <div>X: {fpx![0].toFixed(1)}  Y: {fpx![1].toFixed(1)}</div>
-              <div className="text-cyan-300 font-bold">ROUTE[0] LAST WP (3031)</div>
-              <div>X: {lpx![0].toFixed(1)}  Y: {lpx![1].toFixed(1)}</div>
-            </>}
-            {gridCell && <>
-              <div className="text-violet-300 font-bold mt-1">ENV GRID BOUNDS (4326)</div>
-              <div>NW: ({gridCell.lat0}°, {gridCell.lon0}°)</div>
-              <div>SE: ({gridCell.latN}°, {gridCell.lonN}°)</div>
-              <div className="text-violet-300 font-bold">ENV GRID BOUNDS (3031)</div>
-              <div>NW: ({gridCell.x0}, {gridCell.y0})</div>
-              <div>SE: ({gridCell.x1}, {gridCell.y1})</div>
-            </>}
-            <div className="text-slate-500 text-[9px] mt-1 border-t border-slate-800 pt-1">
-              All POLARIS overlays: EPSG:4326 → EPSG:3031 via ol/proj transform()
-            </div>
+      {showDebug && (
+        <div style={{
+          position: 'absolute', top: 56, right: 16, zIndex: 20, width: 300,
+          background: 'var(--surface-card)', border: '1px solid var(--border)',
+          borderRadius: 'var(--r-lg)', padding: 12, boxShadow: 'var(--shadow-md)',
+          fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)',
+        }}>
+          <div style={{ fontWeight: 700, color: 'var(--navy-800)', borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 8 }}>
+            🛠 COORDINATE PIPELINE DEBUG
           </div>
-        );
-      })()}
-
-      {/* Measure HUD */}
-      {isMeasuring && (
-        <div className="absolute top-4 left-16 z-[1000] bg-amber-900/90 border border-amber-500 rounded-xl px-3 py-1.5 text-white font-mono text-xs shadow-xl backdrop-blur-md flex items-center gap-3">
-          <span>📏 <b>{measureNm.toFixed(1)} NM</b> ({(measureNm * 1.852).toFixed(1)} km)</span>
-          <button onClick={() => { measurePtsRef.current = []; setMeasureNm(0); srcRef.current.measure.clear(); }} className="text-[10px] bg-amber-700 hover:bg-amber-600 px-2 py-0.5 rounded font-bold">Clear</button>
+          <div>EPSG:3031 Nav Extent: ±3,700,000 m</div>
+          <div>Model Grid: {GRID_ROWS}×{GRID_COLS} cells</div>
+          <div>Cursor: {cursorCoords ? `${cursorCoords.lat.toFixed(3)}°S, ${cursorCoords.lon.toFixed(3)}°E` : 'Move mouse'}</div>
         </div>
       )}
 
-      {/* Live Coordinate HUD */}
-      <div className="absolute bottom-4 left-4 z-[1000] bg-slate-900/95 border border-sky-500/40 rounded-xl p-3 shadow-2xl backdrop-blur-md font-mono text-xs text-slate-200 min-w-[280px]">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-1 mb-1.5">
-          <span className="font-bold text-sky-400 text-[10px] uppercase tracking-wider flex items-center gap-1.5">
-            <Compass className="w-3.5 h-3.5" />WGS 84 / Antarctic Polar Stereographic
+      {/* Measure HUD */}
+      {isMeasuring && (
+        <div style={{
+          position: 'absolute', top: 16, left: 70, zIndex: 20,
+          background: 'var(--surface-card)', border: '1px solid var(--warning-border)',
+          borderRadius: 'var(--r-md)', padding: '6px 12px', fontSize: 12, fontWeight: 600,
+          color: 'var(--warning)', boxShadow: 'var(--shadow-md)', display: 'flex', alignItems: 'center', gap: 10,
+        }}>
+          <span>📏 Distance: <strong>{measureNm.toFixed(1)} NM</strong> ({(measureNm * 1.852).toFixed(1)} km)</span>
+          <button onClick={() => { measurePtsRef.current = []; setMeasureNm(0); srcRef.current.measure.clear(); }} className="btn btn-secondary btn-sm" style={{ padding: '2px 6px', fontSize: 10 }}>Clear</button>
+        </div>
+      )}
+
+      {/* ── Cell Click Inspector Popover ── */}
+      {inspection && selectedCellInfo && (
+        <div style={{
+          position: 'absolute', top: 16, right: showLayerControls || showLegend || showBasemapMenu ? 310 : 16, zIndex: 30,
+          width: 300, background: 'var(--surface-card)', border: '1px solid var(--border)',
+          borderRadius: 'var(--r-xl)', padding: 14, boxShadow: 'var(--shadow-lg)',
+          display: 'flex', flexDirection: 'column', gap: 10,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>CELL INSPECTION</div>
+              <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                R{selectedCellInfo.row} C{selectedCellInfo.col} ({Math.abs(selectedCellInfo.lat).toFixed(2)}°S, {Math.abs(selectedCellInfo.lon).toFixed(2)}°E)
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                setSelectedCellInfo(null);
+                polarisStore.clearCellInspection();
+                srcRef.current.selection.clear();
+              }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+            >
+              <X style={{ width: 16, height: 16 }} />
+            </button>
+          </div>
+
+          {/* Inspection details */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Safety Status</span>
+              <span className={`badge ${inspection.safety_status === 'NO_GO' ? 'badge-critical' : 'badge-safe'}`}>
+                {inspection.safety_status}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Fused Risk</span>
+              <span style={{ fontWeight: 700, color: inspection.total_risk >= 70 ? 'var(--critical)' : inspection.total_risk >= 40 ? 'var(--warning)' : 'var(--success)' }}>
+                {inspection.total_risk ?? '—'}/100
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Sea-Ice Concentration</span>
+              <span style={{ fontWeight: 600 }}>{inspection.sic_percent?.toFixed(0) ?? '—'}%</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Wave Height</span>
+              <span style={{ fontWeight: 600 }}>{inspection.wave_height_meters?.toFixed(1) ?? '—'} m</span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>Ocean Current</span>
+              <span style={{ fontWeight: 600 }}>{inspection.current_speed_knots?.toFixed(1) ?? '—'} kn</span>
+            </div>
+
+            {inspection.blocking_reasons && inspection.blocking_reasons.length > 0 && (
+              <div style={{
+                marginTop: 4, padding: 8, borderRadius: 'var(--r-md)',
+                background: 'var(--critical-bg)', border: '1px solid var(--critical-border)',
+                color: 'var(--critical)', fontSize: 11, fontWeight: 600,
+              }}>
+                🚫 {inspection.blocking_reasons.join(', ')}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Live Coordinate & System HUD ── */}
+      <div style={{
+        position: 'absolute', bottom: 16, left: 16, zIndex: 20,
+        background: 'var(--surface-card)', border: '1px solid var(--border)',
+        borderRadius: 'var(--r-md)', padding: '8px 12px', boxShadow: 'var(--shadow-md)',
+        fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-secondary)', minWidth: 260,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 4 }}>
+          <span style={{ fontWeight: 700, color: 'var(--navy-800)', fontSize: 10, letterSpacing: '0.05em' }}>
+            POSITION HUD
           </span>
-          <span className="text-[9px] bg-sky-950 text-sky-300 px-1.5 py-0.5 rounded border border-sky-600/30">EPSG:3031</span>
+          <span className="badge badge-navy" style={{ fontSize: 8 }}>EPSG:3031</span>
         </div>
         {cursorCoords ? (
-          <>
-            <div className="flex justify-between text-[11px] mb-0.5">
-              <span className="text-slate-400">LAT</span>
-              <span className="text-cyan-300 font-bold">{Math.abs(cursorCoords.lat).toFixed(3)}°{cursorCoords.lat < 0 ? 'S' : 'N'}</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>LAT</span>
+              <span style={{ fontWeight: 600, color: 'var(--navy-800)' }}>{Math.abs(cursorCoords.lat).toFixed(3)}°{cursorCoords.lat < 0 ? 'S' : 'N'}</span>
             </div>
-            <div className="flex justify-between text-[11px] mb-0.5">
-              <span className="text-slate-400">LON</span>
-              <span className="text-cyan-300 font-bold">{Math.abs(cursorCoords.lon).toFixed(3)}°{cursorCoords.lon >= 0 ? 'E' : 'W'}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <span style={{ color: 'var(--text-muted)' }}>LON</span>
+              <span style={{ fontWeight: 600, color: 'var(--navy-800)' }}>{Math.abs(cursorCoords.lon).toFixed(3)}°{cursorCoords.lon >= 0 ? 'E' : 'W'}</span>
             </div>
-            <div className="flex justify-between text-[10px] text-slate-500 border-t border-slate-800 pt-1 mt-0.5">
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-muted)', borderTop: '1px solid var(--border)', paddingTop: 2, marginTop: 2 }}>
               <span>DMS</span>
               <span>{dms(cursorCoords.lat, true)}, {dms(cursorCoords.lon, false)}</span>
             </div>
-          </>
+          </div>
         ) : (
-          <div className="text-slate-500 text-center text-[11px] py-0.5">Move mouse over map for live coordinates</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 10, textAlign: 'center' }}>Hover over map for live coordinates</div>
         )}
       </div>
     </div>

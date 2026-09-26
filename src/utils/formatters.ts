@@ -21,11 +21,11 @@ export function formatFuelIndex(fuelIndex: number): string {
 }
 
 export function formatRiskBadge(risk: number): { label: string; color: string; bgClass: string; textClass: string } {
-  if (risk <= 20) return { label: 'LOW', color: '#10B981', bgClass: 'bg-emerald-950/80 border-emerald-500/30', textClass: 'text-emerald-400' };
-  if (risk <= 40) return { label: 'MODERATE', color: '#06B6D4', bgClass: 'bg-cyan-950/80 border-cyan-500/30', textClass: 'text-cyan-400' };
-  if (risk <= 60) return { label: 'HIGH', color: '#F59E0B', bgClass: 'bg-amber-950/80 border-amber-500/30', textClass: 'text-amber-400' };
-  if (risk <= 80) return { label: 'VERY HIGH', color: '#F97316', bgClass: 'bg-orange-950/80 border-orange-500/30', textClass: 'text-orange-400' };
-  return { label: 'CRITICAL', color: '#EF4444', bgClass: 'bg-rose-950/80 border-rose-500/30', textClass: 'text-rose-400' };
+  if (risk <= 20) return { label: 'LOW', color: '#10B981', bgClass: 'bg-emerald-600 text-white', textClass: 'text-emerald-400' };
+  if (risk <= 40) return { label: 'MODERATE', color: '#D89B2B', bgClass: 'bg-amber-600 text-white', textClass: 'text-amber-400' };
+  if (risk <= 60) return { label: 'HIGH', color: '#DC2626', bgClass: 'bg-red-600 text-white border-red-700', textClass: 'text-red-400' };
+  if (risk <= 80) return { label: 'VERY HIGH', color: '#B91C1C', bgClass: 'bg-red-700 text-white border-red-800', textClass: 'text-red-500' };
+  return { label: 'CRITICAL', color: '#EF4444', bgClass: 'bg-red-800 text-white border-red-900', textClass: 'text-red-600' };
 }
 
 export function formatUtcTime(baseDate: Date, addHours: number = 0): string {

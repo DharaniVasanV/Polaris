@@ -1,9 +1,23 @@
-/* Import Leaflet CSS */
+/* ============================================================
+   POLARIS — Main Entry CSS
+   Import order matters:
+   1. Third-party (Leaflet, Google Fonts)
+   2. Design tokens
+   3. Global utilities
+   4. Tailwind (if used for utility classes)
+   ============================================================ */
+
+/* Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* Leaflet CSS (map library) */
 @import 'leaflet/dist/leaflet.css';
 
-/* Import POLARIS design system tokens and button utilities */
-@import './polaris.css';
+/* POLARIS design system */
+@import './tokens.css';
+@import './globals.css';
 
+/* Tailwind utilities */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
