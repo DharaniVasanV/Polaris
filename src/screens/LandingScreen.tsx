@@ -1,350 +1,299 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { polarisStore } from '../store/polarisStore';
 import { PolarisAppState } from '../types/state';
 
-interface Props { state: PolarisAppState; }
+import { HeroVisual } from '../components/landing/HeroVisual';
+import { WorkflowSection } from '../components/landing/WorkflowSection';
+import { EnginesSection } from '../components/landing/EnginesSection';
+import { OperatingGridSection } from '../components/landing/OperatingGridSection';
+import { WhatIfInteractiveSection } from '../components/landing/WhatIfInteractiveSection';
+import { MetricsAndProvenanceSection } from '../components/landing/MetricsAndProvenanceSection';
 
-/* ── Animated counter ────────────────────────────── */
-function Counter({ end, duration = 1200 }: { end: number; duration?: number }) {
-  const [val, setVal] = useState(0);
-  useEffect(() => {
-    const start = performance.now();
-    const tick = (now: number) => {
-      const t = Math.min((now - start) / duration, 1);
-      setVal(Math.round(end * t));
-      if (t < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }, [end, duration]);
-  return <>{val.toLocaleString()}</>;
+interface Props {
+  state: PolarisAppState;
 }
 
 export const LandingScreen: React.FC<Props> = ({ state }) => {
+  const [isScrolled, setIsScrolled] = useState(false);
+
   const goLogin = () => polarisStore.setScreen('LOGIN');
-  const goDash  = () => { if (state.isAuthenticated) polarisStore.setScreen('DASHBOARD'); else goLogin(); };
+  const goDash = () => {
+    if (state.isAuthenticated) {
+      polarisStore.setScreen('DASHBOARD');
+    } else {
+      goLogin();
+    }
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 40);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-card)', fontFamily: 'var(--font-sans)', color: 'var(--text-primary)' }}>
+    <div style={{ minHeight: '100vh', background: '#FAFBFF', fontFamily: 'var(--font-sans)', color: '#0A205C' }}>
 
-      {/* ═══ NAVBAR ═══ */}
+      {/* ═══ 1. TOP NAVIGATION BAR ═══ */}
       <nav style={{
         position: 'sticky', top: 0, zIndex: 100,
-        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(12px)',
-        borderBottom: '1px solid var(--border)',
+        background: isScrolled ? 'rgba(250, 251, 255, 0.96)' : 'rgba(10, 32, 92, 0.95)',
+        backdropFilter: 'blur(12px)',
+        borderBottom: `1px solid ${isScrolled ? '#D0E4FE' : 'rgba(112, 151, 210, 0.3)'}`,
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        padding: '0 32px', height: 56,
+        padding: '0 32px', height: 60, transition: 'all 0.25s ease'
       }}>
+        {/* Brand Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{
-            width: 32, height: 32, borderRadius: 8, background: 'var(--navy-800)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 34, height: 34, borderRadius: 8,
+            background: isScrolled ? '#0A205C' : '#344DB1',
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            <svg width="18" height="18" fill="none" stroke="#FAFBFF" strokeWidth="2.2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
             </svg>
           </div>
-          <span style={{ fontWeight: 900, fontSize: 15, letterSpacing: '0.12em', color: 'var(--navy-800)' }}>POLARIS</span>
+          <span style={{
+            fontWeight: 900, fontSize: 16, letterSpacing: '0.12em',
+            color: isScrolled ? '#0A205C' : '#FAFBFF'
+          }}>
+            POLARIS
+          </span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-          <a href="#workflow" style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 500 }}>How it works</a>
-          <a href="#data" style={{ fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none', fontWeight: 500 }}>Data</a>
-          <button onClick={goDash} className="btn btn-primary" style={{ fontSize: 13 }}>
-            Enter Operations →
+
+        {/* Section Links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24 }}>
+          {[
+            { label: 'SYSTEM', href: '#workflow' },
+            { label: 'AI ENGINES', href: '#engines' },
+            { label: 'MAP', href: '#map' },
+            { label: 'WORKFLOW', href: '#workflow' },
+            { label: 'VALIDATION', href: '#metrics' }
+          ].map(link => (
+            <a
+              key={link.label}
+              href={link.href}
+              style={{
+                fontSize: 12, fontWeight: 700, letterSpacing: '0.05em',
+                color: isScrolled ? '#7097D2' : '#D0E4FE',
+                textDecoration: 'none', transition: 'color 0.2s'
+              }}
+            >
+              {link.label}
+            </a>
+          ))}
+
+          {/* Primary Action */}
+          <button
+            onClick={goDash}
+            style={{
+              padding: '8px 20px', borderRadius: 8, border: 'none',
+              background: '#344DB1', color: '#FAFBFF',
+              fontSize: 13, fontWeight: 700, cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(52, 77, 177, 0.25)',
+              transition: 'transform 0.15s ease'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-1px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+          >
+            ENTER OPERATIONS
           </button>
         </div>
       </nav>
 
-      {/* ═══ HERO ═══ */}
+      {/* ═══ 2. HERO SECTION ═══ */}
       <section style={{
         position: 'relative', overflow: 'hidden',
-        display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 520,
-        background: 'linear-gradient(135deg, var(--navy-800) 0%, #132D6E 50%, var(--blue-500) 100%)',
+        display: 'grid', gridTemplateColumns: '1fr 1fr', minHeight: 600,
+        background: '#0A205C', color: '#FAFBFF'
       }}>
-        {/* Left text */}
+        {/* LEFT Hero Text Column */}
         <div style={{
-          padding: '80px 48px 80px 48px',
+          padding: '80px 48px 80px 64px',
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          maxWidth: 640, marginLeft: 'auto',
-          zIndex: 2,
+          maxWidth: 640, zIndex: 2
         }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
             padding: '4px 14px', borderRadius: 20,
-            background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)',
-            marginBottom: 24, width: 'fit-content',
+            background: 'rgba(208, 228, 254, 0.1)', border: '1px solid rgba(208, 228, 254, 0.25)',
+            marginBottom: 24, width: 'fit-content'
           }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ADE80' }} />
-            <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', color: 'rgba(255,255,255,0.85)' }}>
-              RESEARCH-GRADE DECISION SUPPORT
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#D0E4FE' }} />
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: '#D0E4FE' }}>
+              RESEARCH-GRADE ANTARCTIC DECISION SUPPORT
             </span>
           </div>
 
           <h1 style={{
-            fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 800,
-            color: 'white', lineHeight: 1.15, marginBottom: 20, letterSpacing: '-0.01em',
+            fontSize: 'clamp(32px, 3.6vw, 48px)', fontWeight: 900,
+            color: '#FAFBFF', lineHeight: 1.15, marginBottom: 20, letterSpacing: '-0.01em'
           }}>
-            Predictive Ocean–Ice Learning for Antarctic Route Intelligence&nbsp;and&nbsp;Safety
+            Predictive Ocean–Ice Learning for Antarctic Route Intelligence and Safety
           </h1>
 
           <p style={{
-            fontSize: 'clamp(14px, 1.4vw, 17px)',
-            color: 'rgba(219,230,245,0.85)', lineHeight: 1.7,
-            marginBottom: 32, maxWidth: 520,
+            fontSize: 'clamp(14px, 1.3vw, 16px)',
+            color: '#D0E4FE', lineHeight: 1.7,
+            marginBottom: 36, maxWidth: 540
           }}>
-            AI-powered decision support combining sea-ice forecasting, iceberg trajectory prediction,
-            environmental risk modelling, and constraint-aware route optimization for Antarctic research vessels.
+            AI-enabled decision support for Antarctic research vessels, combining sea-ice forecasting, iceberg trajectory prediction, environmental risk assessment and safe route planning.
           </p>
 
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <button onClick={goDash} style={{
-              padding: '14px 28px', borderRadius: 10, border: 'none',
-              background: 'white', color: 'var(--navy-800)',
-              fontSize: 14, fontWeight: 700, cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-              transition: 'transform 0.2s',
-            }}
-              onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-              onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-            >Enter Operations →</button>
-            <a href="#workflow" style={{
-              padding: '14px 28px', borderRadius: 10,
-              border: '1.5px solid rgba(255,255,255,0.25)',
-              background: 'rgba(255,255,255,0.08)',
-              color: 'white', fontSize: 14, fontWeight: 600,
-              textDecoration: 'none', backdropFilter: 'blur(8px)',
-            }}>Explore Platform</a>
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 40 }}>
+            {/* Primary CTA */}
+            <button
+              onClick={goDash}
+              style={{
+                padding: '14px 32px', borderRadius: 10, border: 'none',
+                background: '#344DB1', color: '#FAFBFF',
+                fontSize: 14, fontWeight: 800, cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(52, 77, 177, 0.4)',
+                transition: 'transform 0.2s ease, background 0.2s'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.background = '#2B4099'; }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.background = '#344DB1'; }}
+            >
+              ENTER OPERATIONS
+            </button>
+
+            {/* Secondary CTA */}
+            <a
+              href="#workflow"
+              style={{
+                padding: '14px 28px', borderRadius: 10,
+                border: '1.5px solid #D0E4FE',
+                background: '#E9F2FF',
+                color: '#0A205C', fontSize: 14, fontWeight: 800,
+                textDecoration: 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center'
+              }}
+            >
+              EXPLORE POLARIS
+            </a>
           </div>
 
-          {/* Geo metadata */}
           <div style={{
-            marginTop: 40, display: 'flex', gap: 24,
-            fontSize: 11, color: 'rgba(219,230,245,0.5)', fontFamily: 'var(--font-mono)',
+            display: 'flex', gap: 24, fontSize: 11, color: '#7097D2', fontFamily: 'var(--font-mono)'
           }}>
-            <span>ANTARCTICA</span>
-            <span>60°S — 90°S</span>
-            <span>RESEARCH NAVIGATION</span>
+            <span>SOUTHERN OCEAN // 60°S — 90°S</span>
+            <span>EPSG:3031 STEREOGRAPHIC</span>
           </div>
         </div>
 
-        {/* Right image */}
-        <div style={{ position: 'relative', overflow: 'hidden' }}>
-          <img
-            src="/assets/antarctica/hero-antarctica.png"
-            alt="Antarctic satellite view"
-            style={{
-              position: 'absolute', top: 0, right: 0,
-              width: '100%', height: '100%', objectFit: 'cover',
-              opacity: 0.55, mixBlendMode: 'luminosity',
-            }}
-          />
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(90deg, var(--navy-800) 0%, transparent 40%)',
-          }} />
+        {/* RIGHT Antarctic Scientific Visual */}
+        <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+          <HeroVisual />
         </div>
       </section>
 
-      {/* ═══ STATS ═══ */}
+      {/* ═══ HERO OPERATIONAL STATUS STRIP ═══ */}
       <section style={{
-        background: 'var(--surface-card)', borderBottom: '1px solid var(--border)',
-        padding: '40px 32px',
+        background: '#07153E', borderTop: '1px solid rgba(112, 151, 210, 0.3)',
+        borderBottom: '1px solid rgba(112, 151, 210, 0.3)',
+        padding: '12px 32px'
       }}>
         <div style={{
-          maxWidth: 1000, margin: '0 auto',
-          display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 24, textAlign: 'center',
+          maxWidth: 1100, margin: '0 auto',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: 16
         }}>
           {[
-            { val: 271906, label: 'GRU training sequences' },
-            { val: 161,    label: 'Selected iceberg tracks' },
-            { val: 468,    label: 'Decision-grid cells' },
-            { val: 5,      label: 'Sea-ice forecast horizons' },
-            { val: 156,    label: 'Backend validation tests' },
-          ].map(({ val, label }) => (
-            <div key={label}>
-              <div style={{
-                fontSize: 28, fontWeight: 800, color: 'var(--navy-800)',
-                fontFamily: 'var(--font-mono)', lineHeight: 1.2, marginBottom: 4,
-              }}>
-                <Counter end={val} />
-              </div>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.4 }}>{label}</div>
+            { label: 'GRU MODEL', status: 'ACTIVE', color: '#D0E4FE' },
+            { label: 'CONVLSTM2D', status: 'ACTIVE', color: '#D0E4FE' },
+            { label: 'WEATHER MLP', status: 'ACTIVE', color: '#D0E4FE' },
+            { label: 'RISK TWIN', status: 'READY', color: '#FAFBFF' },
+            { label: 'TIME-AWARE A*', status: 'READY', color: '#FAFBFF' }
+          ].map(st => (
+            <div key={st.label} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 6, height: 6, borderRadius: '50%', background: st.color }} />
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#7097D2', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
+                {st.label}:
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: st.color, fontFamily: 'var(--font-mono)' }}>
+                {st.status}
+              </span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ═══ WORKFLOW ═══ */}
-      <section id="workflow" style={{ padding: '80px 32px', background: 'var(--surface-alt)' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <p className="section-label" style={{ marginBottom: 8 }}>OPERATIONAL WORKFLOW</p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>How POLARIS Works</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Four continuous phases powering Antarctic decision support</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 24 }}>
-            {[
-              { n: '01', title: 'Observe', desc: 'Ingest Sentinel-1 SAR imagery, BAS bathymetry, AIS telemetry, and meteorological observations.' },
-              { n: '02', title: 'Forecast', desc: 'Predict sea-ice dynamics via ConvLSTM2D and iceberg drift via GRU at 0–24h horizons.' },
-              { n: '03', title: 'Assess', desc: 'Compute 4D risk fields combining SIC, iceberg standoff, weather MLP, and vessel constraints.' },
-              { n: '04', title: 'Route', desc: 'Execute Time-Aware A* multi-objective optimization with full human approval.' },
-            ].map(({ n, title, desc }) => (
-              <div key={n} style={{ textAlign: 'center' }}>
-                <div style={{
-                  width: 48, height: 48, borderRadius: '50%', margin: '0 auto 16px',
-                  background: 'var(--navy-800)', color: 'white',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: 800, fontSize: 14, fontFamily: 'var(--font-mono)',
-                  border: '3px solid var(--blue-200)',
-                  boxShadow: '0 0 0 6px rgba(65,91,177,0.08)',
-                }}>{n}</div>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>{title}</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ═══ 3. WORKFLOW PIPELINE ═══ */}
+      <WorkflowSection />
 
-      {/* ═══ AI ENGINES ═══ */}
-      <section style={{ padding: '80px 32px', background: 'var(--surface-card)' }}>
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <p className="section-label" style={{ marginBottom: 8 }}>INTELLIGENCE LAYER</p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>AI Engines</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)' }}>Deep learning models trained on Antarctic polar datasets</p>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-            {[
-              { tag: 'Sequential GRU', title: 'Iceberg Drift Engine', desc: 'Predicts 24–72h trajectory vectors and spatial drift envelopes for Southern Ocean tabular icebergs.' },
-              { tag: 'ConvLSTM2D', title: 'Sea-Ice Forecast', desc: 'Spatiotemporal grid prediction of SIC% across five forecast horizons using convolutional LSTM.' },
-              { tag: 'PyTorch MLP', title: 'Weather Risk Classifier', desc: 'Estimates localized severe weather risk from wind, wave, and polar front squall probabilities.' },
-            ].map(({ tag, title, desc }) => (
-              <div key={title} className="p-card" style={{ padding: '24px' }}>
-                <span className="badge badge-safe" style={{ marginBottom: 12, display: 'inline-flex' }}>{tag}</span>
-                <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 8 }}>{title}</h3>
-                <p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.65 }}>{desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ═══ 4. PREDICTIVE AI ENGINES ═══ */}
+      <EnginesSection />
 
-      {/* ═══ DECISION PIPELINE ═══ */}
-      <section style={{ padding: '80px 32px', background: 'var(--surface-alt)' }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <p className="section-label" style={{ marginBottom: 8 }}>DECISION PIPELINE</p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>From Data to Safe Routes</h2>
-          </div>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 0, flexWrap: 'wrap', justifyContent: 'center',
-          }}>
-            {['Risk Fusion', 'Safety Engine', 'Time-Aware A*', 'Multi-Route Opt.', 'What-If'].map((step, i) => (
-              <React.Fragment key={step}>
-                <div style={{
-                  padding: '12px 20px', borderRadius: 'var(--r-lg)',
-                  background: 'var(--surface-card)', border: '1px solid var(--border)',
-                  fontSize: 13, fontWeight: 600, color: 'var(--text-primary)',
-                  boxShadow: 'var(--shadow-sm)',
-                }}>{step}</div>
-                {i < 4 && (
-                  <svg width="24" height="24" fill="none" stroke="var(--blue-200)" strokeWidth="2" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/>
-                  </svg>
-                )}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
-      </section>
+      {/* ═══ 5. ANTARCTIC OPERATING GRID ═══ */}
+      <OperatingGridSection />
 
-      {/* ═══ DATA PROVENANCE ═══ */}
-      <section id="data" style={{ padding: '80px 32px', background: 'var(--surface-card)' }}>
-        <div style={{ maxWidth: 800, margin: '0 auto' }}>
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <p className="section-label" style={{ marginBottom: 8 }}>DATA PROVENANCE</p>
-            <h2 style={{ fontSize: 28, fontWeight: 700, marginBottom: 8 }}>Honest Data Reporting</h2>
-            <p style={{ fontSize: 14, color: 'var(--text-muted)', maxWidth: 600, margin: '0 auto' }}>
-              POLARIS combines trained historical models, recent satellite observations,
-              and simulated vessel telemetry. Every data source is labelled.
-            </p>
-          </div>
+      {/* ═══ 6. WHAT-IF DEMONSTRATION & TRADE-OFFS ═══ */}
+      <WhatIfInteractiveSection />
 
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 32 }}>
-            {[
-              { label: 'HISTORICAL', color: 'var(--info)', bg: 'var(--info-bg)' },
-              { label: 'RECENT', color: 'var(--success)', bg: 'var(--success-bg)' },
-              { label: 'SIMULATED', color: 'var(--warning)', bg: 'var(--warning-bg)' },
-              { label: 'FORECAST', color: '#7C68C8', bg: '#F3F0FF' },
-              { label: 'DERIVED', color: 'var(--text-muted)', bg: 'var(--surface-alt)' },
-            ].map(({ label, color, bg }) => (
-              <span key={label} style={{
-                padding: '4px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700,
-                letterSpacing: '0.05em', background: bg, color,
-                border: `1px solid ${color}22`,
-              }}>{label}</span>
-            ))}
-          </div>
+      {/* ═══ 7. METRICS, PROVENANCE & OFFLINE CAPABILITY ═══ */}
+      <MetricsAndProvenanceSection />
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-            {[
-              { prov: 'HISTORICAL', src: 'GEBCO 2023 Bathymetry', desc: '15 arc-second global seafloor elevation' },
-              { prov: 'HISTORICAL', src: 'BAS Polar Basemap', desc: 'EPSG:3031 Antarctic WMTS tile service' },
-              { prov: 'RECENT', src: 'Sentinel-1 SAR', desc: 'C-band SAR observations from Copernicus Data Space' },
-              { prov: 'SIMULATED', src: 'Vessel Telemetry', desc: 'Manual position input / demo coordinates' },
-              { prov: 'FORECAST', src: 'ConvLSTM Sea-Ice', desc: 'Multi-horizon SIC% neural prediction' },
-              { prov: 'FORECAST', src: 'GRU Iceberg Drift', desc: 'Trajectory and uncertainty envelopes' },
-              { prov: 'DERIVED', src: 'Risk Twin Field', desc: 'Weighted 18×26 multi-factor hazard grid' },
-            ].map(({ prov, src, desc }) => (
-              <div key={src} style={{
-                display: 'flex', alignItems: 'center', gap: 16,
-                padding: '12px 0', borderBottom: '1px solid var(--border)',
-              }}>
-                <span style={{
-                  width: 80, fontSize: 9, fontWeight: 700, letterSpacing: '0.05em',
-                  color: 'var(--text-muted)', flexShrink: 0, textAlign: 'right',
-                }}>{prov}</span>
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{src}</div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ CTA ═══ */}
+      {/* ═══ 8. FINAL CTA ═══ */}
       <section style={{
-        padding: '80px 32px', textAlign: 'center',
-        background: 'linear-gradient(135deg, var(--navy-800), var(--blue-500))',
+        padding: '96px 32px', textAlign: 'center',
+        background: '#0A205C', color: '#FAFBFF'
       }}>
-        <h2 style={{ fontSize: 32, fontWeight: 800, color: 'white', marginBottom: 12, lineHeight: 1.25 }}>
-          Turn Antarctic Data<br />into Safer Route Decisions.
-        </h2>
-        <p style={{ fontSize: 15, color: 'rgba(219,230,245,0.8)', maxWidth: 520, margin: '0 auto 32px', lineHeight: 1.6 }}>
-          Launch the full POLARIS console with EPSG:3031 chart views, Risk Twin analysis, and AI-powered route generation.
-        </p>
-        <button onClick={goDash} style={{
-          padding: '16px 40px', borderRadius: 12, border: 'none',
-          background: 'white', color: 'var(--navy-800)',
-          fontSize: 15, fontWeight: 800, cursor: 'pointer',
-          boxShadow: '0 6px 24px rgba(0,0,0,0.2)',
-          transition: 'transform 0.2s',
-        }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'none'}
-        >Open POLARIS Operations →</button>
+        <div style={{ maxWidth: 700, margin: '0 auto' }}>
+          <h2 style={{ fontSize: 'clamp(28px, 3.5vw, 40px)', fontWeight: 900, color: '#FAFBFF', marginBottom: 16, lineHeight: 1.2 }}>
+            Turn Antarctic Data into Safer Route Decisions.
+          </h2>
+          <p style={{ fontSize: 16, color: '#D0E4FE', marginBottom: 36, lineHeight: 1.6 }}>
+            Launch the POLARIS operations console with EPSG:3031 polar chart views, 4D Risk Twin analysis, and deep learning-backed route optimization.
+          </p>
+          <button
+            onClick={goDash}
+            style={{
+              padding: '16px 44px', borderRadius: 12, border: 'none',
+              background: '#344DB1', color: '#FAFBFF',
+              fontSize: 16, fontWeight: 800, cursor: 'pointer',
+              boxShadow: '0 8px 28px rgba(52, 77, 177, 0.4)',
+              transition: 'transform 0.2s ease'
+            }}
+            onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+          >
+            ENTER OPERATIONS →
+          </button>
+        </div>
       </section>
 
-      {/* ═══ FOOTER ═══ */}
+      {/* ═══ 9. MINIMAL LANDING FOOTER ═══ */}
       <footer style={{
-        background: 'var(--navy-800)', color: 'rgba(112,151,210,0.6)',
-        padding: '16px 32px', display: 'flex', justifyContent: 'space-between',
-        fontSize: 11, flexWrap: 'wrap', gap: 8,
+        background: '#07153E', borderTop: '1px solid rgba(112, 151, 210, 0.2)',
+        padding: '32px', color: '#7097D2', fontSize: 12
       }}>
-        <span>POLARIS Prototype · Smart India Hackathon 2026</span>
-        <span>AI recommends; the Captain makes the final operational decision.</span>
+        <div style={{
+          maxWidth: 1100, margin: '0 auto',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          flexWrap: 'wrap', gap: 20
+        }}>
+          <div>
+            <div style={{ fontWeight: 900, fontSize: 14, color: '#FAFBFF', letterSpacing: '0.1em', marginBottom: 4 }}>
+              POLARIS
+            </div>
+            <div style={{ fontSize: 11, color: '#7097D2' }}>
+              Predictive Ocean–Ice Learning for Antarctic Route Intelligence and Safety
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 24, fontSize: 12, fontWeight: 600 }}>
+            <a href="#workflow" style={{ color: '#D0E4FE', textDecoration: 'none' }}>System</a>
+            <a href="#engines" style={{ color: '#D0E4FE', textDecoration: 'none' }}>Documentation</a>
+            <button onClick={goDash} style={{ background: 'none', border: 'none', color: '#D0E4FE', cursor: 'pointer', padding: 0, fontWeight: 600, fontSize: 12 }}>
+              Operations
+            </button>
+          </div>
+        </div>
+        <div style={{ maxWidth: 1100, margin: '16px auto 0', paddingTop: 16, borderTop: '1px solid rgba(112,151,210,0.1)', fontSize: 10, color: 'rgba(112,151,210,0.6)', textAlign: 'center' }}>
+          AI recommends; the Captain retains sole operational command for final routing authorization.
+        </div>
       </footer>
     </div>
   );
