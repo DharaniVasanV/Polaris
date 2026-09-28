@@ -12,7 +12,7 @@ import { BASELINE_ENVIRONMENT_GRID } from '../data/baselineEnvironment';
 import { BASELINE_ICEBERGS } from '../data/icebergs';
 import { DEMO_RESEARCH_STATIONS } from '../data/stations';
 import { DEMO_FLEET_VESSELS } from '../data/fleet';
-import { DEFAULT_RISK_WEIGHTS } from '../simulation/riskEngine';
+import { DEFAULT_RISK_WEIGHTS, evaluateCellRisk } from '../simulation/riskEngine';
 import { SCENARIO_PRESETS, applyScenarioToEnvironment, applyScenarioToIcebergs } from '../simulation/scenarioEngine';
 import { generatePolarisRoutes } from '../simulation/routeEngine';
 import { HAZARD_SIMULATION_STEPS, createHazardAlert, createHazardEventLogs } from '../simulation/hazardSimulation';
@@ -51,20 +51,22 @@ export const DEFAULT_VESSEL_PROFILE: VesselProfile = {
 };
 
 const DEFAULT_MAP_LAYERS: MapLayerState = {
+  // DEFAULT ON — core navigation layers
   seaIce: true,
   icebergs: true,
   icebergForecast: true,
-  icebergUncertainty: true,
-  weather: true,
-  oceanCurrent: true,
-  bathymetry: true,
+  icebergUncertainty: true,    // DEFAULT ON — prediction uncertainty circles enabled
   noGoZones: true,
   recommendedRoute: true,
   alternativeRoute: true,
-  shortestRoute: true,
   researchStations: true,
-  fleetVessels: true,
-  sentinel1Sar: false,
+  // DEFAULT OFF — optional/detailed layers
+  weather: false,
+  oceanCurrent: false,
+  bathymetry: false,
+  shortestRoute: false,
+  fleetVessels: false,
+  sentinel1Sar: false,         // only when SAR image is available
 };
 
 function createInitialState(): PolarisAppState {
@@ -118,6 +120,7 @@ function createInitialState(): PolarisAppState {
     activeRouteStatus: 'RECOMMENDED',
 
     icebergs: initialIcebergs,
+    selectedIcebergId: 'B-22',
     activeScenarioId: 'NORMAL',
     activeScenario: initialScenario,
 
@@ -1028,19 +1031,64 @@ class PolarisStore {
 
   public async inspectCell(row: number, column: number, horizonHours?: number) {
     const h = horizonHours ?? this.state.simulationTimeHours;
+    let cellData: any = null;
     try {
-      const cellData = await fetchCellInspection(
+      cellData = await fetchCellInspection(
         row,
         column,
         h,
         this.state.vessel.safeSicThresholdPercent,
         this.state.vessel.draftMeters
       );
-      if (cellData) {
-        this.setState(() => ({ selectedCellInspection: cellData }));
+    } catch {
+      // Backend offline — proceed to local fallback
+    }
+
+    // Local fallback calculation if backend is unreachable or returns null
+    if (!cellData) {
+      const envGrid = applyScenarioToEnvironment(BASELINE_ENVIRONMENT_GRID, this.state.activeScenario);
+      if (row >= 0 && row < envGrid.length && column >= 0 && column < envGrid[row].length) {
+        const cell = envGrid[row][column];
+        const risk = evaluateCellRisk(cell, h as ValidTimeHorizon, this.state.vessel, this.state.icebergs);
+        const sic = cell.sicValues[h as ValidTimeHorizon] ?? cell.sicValues[0];
+        const isNoGo = risk.isNoGo;
+        const reasons = risk.noGoReason ? [risk.noGoReason] : [];
+
+        cellData = {
+          row,
+          column,
+          latitude: cell.latitude,
+          longitude: cell.longitude,
+          horizon_hours: h,
+          is_traversable: !isNoGo,
+          safety_status: isNoGo ? 'NO_GO' : 'TRAVERSABLE',
+          blocking_reasons: reasons,
+          total_risk: Math.round(risk.totalRisk),
+          risk_category: risk.totalRisk <= 20 ? 'SAFE' : risk.totalRisk <= 40 ? 'MODERATE' : risk.totalRisk <= 70 ? 'HIGH' : 'CRITICAL',
+          dominant_factor: isNoGo ? (reasons[0] || 'ICE_CONCENTRATION') : 'SEA_ICE',
+          sic_percent: sic,
+          sic_provenance: 'ConvLSTM Prediction (Local)',
+          iceberg_risk: risk.breakdown.icebergRisk,
+          nearest_iceberg_id: null,
+          nearest_iceberg_dist_km: null,
+          weather_risk: Math.round((risk.breakdown.waveRisk + risk.breakdown.windRisk) / 2),
+          weather_provenance: 'Weather MLP (Local)',
+          wave_height_meters: cell.waveValues[h as ValidTimeHorizon] ?? 1.5,
+          wave_provenance: 'Parametric Wave Model',
+          current_speed_knots: Math.round(Math.sqrt(Math.pow(cell.currentUValues[h as ValidTimeHorizon] ?? 0.5, 2) + Math.pow(cell.currentVValues[h as ValidTimeHorizon] ?? 0.5, 2)) * 10) / 10,
+          current_provenance: 'General Circulation Model',
+          uncertainty_score: risk.breakdown.uncertaintyRisk,
+          model_provenances: {
+            sea_ice: 'ConvLSTM (Local)',
+            iceberg: 'DeepGRU (Local)',
+            weather: 'Weather MLP (Local)'
+          }
+        };
       }
-    } catch (err) {
-      console.warn('[POLARIS] Error inspecting cell:', err);
+    }
+
+    if (cellData) {
+      this.setState(() => ({ selectedCellInspection: cellData }));
     }
   }
 

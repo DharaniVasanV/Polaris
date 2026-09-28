@@ -38,20 +38,26 @@
   --border-strong:#B8D3FA;
   --border-navy:  #152E75;
 
-  /* ── STATUS ───────────────────────────────────── */
-  --success:        #1F9D73;
-  --success-bg:     #ECFDF5;
-  --success-border: #A7E3CC;
-  --warning:        #D89B2B;
-  --warning-bg:     #FFFBEB;
-  --warning-border: #F5D98A;
-  --high:           #DC2626;
-  --high-bg:        #FEF2F2;
-  --critical:       #C94B4B;
-  --critical-bg:    #FEF2F2;
-  --critical-border:#F5A3A3;
-  --info:           #415BB1;
-  --info-bg:        #EAF3FF;
+  /* ── STATUS (AA-Compliant Contrast) ───────────────────────────────────── */
+  --success:        #15803D; /* dark green */
+  --success-bg:     #F0FDF4; /* light green */
+  --success-border: #BBF7D0;
+  
+  --warning:        #B45309; /* dark amber/brown */
+  --warning-bg:     #FFF7E6; /* very light amber */
+  --warning-border: #F3D19C;
+  
+  --high:           #C2410C; /* dark orange */
+  --high-bg:        #FFF7ED; /* light orange */
+  --high-border:    #FED7AA;
+  
+  --critical:       #B91C1C; /* dark red */
+  --critical-bg:    #FEF2F2; /* light red */
+  --critical-border:#FECACA;
+  
+  --info:           #1D4ED8; /* dark blue */
+  --info-bg:        #EFF6FF; /* light blue */
+  --info-border:    #BFDBFE;
 
   /* ── MAP ──────────────────────────────────────── */
   --route-primary:       #2F80C9;

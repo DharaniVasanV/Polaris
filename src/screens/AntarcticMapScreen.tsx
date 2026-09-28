@@ -19,13 +19,18 @@ export const AntarcticMapScreen: React.FC<Props> = ({ state }) => {
 
         {/* Sector label */}
         <div style={{
-          position: 'absolute', top: 12, left: 12, zIndex: 20,
+          position: 'absolute', top: 12, left: 68, zIndex: 10,
           background: 'rgba(255,255,255,0.92)', border: '1px solid var(--border)',
-          borderRadius: 'var(--r-md)', padding: '6px 12px',
+          borderRadius: 'var(--r-md)', padding: '4px 10px',
           boxShadow: 'var(--shadow-sm)', pointerEvents: 'none',
+          maxWidth: 'calc(100% - 480px)', overflow: 'hidden',
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>Antarctic Operations Map</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>EPSG:3031 · Full Southern Ocean</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Antarctic Operations Map
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            EPSG:3031 · Full Southern Ocean
+          </div>
         </div>
 
         {/* Cell inspector */}

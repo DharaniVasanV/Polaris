@@ -104,11 +104,6 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <span style={{ color: 'var(--text-inverse)', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>MISSION</span>
-            <span style={{
-              padding: '2px 8px', borderRadius: 4, fontSize: 9, fontWeight: 700,
-              background: navColor + '18', color: navColor,
-              border: `1px solid ${navColor}40`,
-            }}>{navStatus.status.replace('_', ' ')}</span>
           </div>
 
           <Section title="VESSEL">
@@ -176,13 +171,16 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
 
         {/* Sector badge */}
         <div style={{
-          position: 'absolute', top: 12, left: 12, zIndex: 'var(--z-map-overlay)' as any,
+          position: 'absolute', top: 12, left: 68, zIndex: 10,
           background: 'rgba(255,255,255,0.92)', border: '1px solid var(--border)',
-          borderRadius: 'var(--r-md)', padding: '6px 12px',
+          borderRadius: 'var(--r-md)', padding: '4px 10px',
           boxShadow: 'var(--shadow-sm)', pointerEvents: 'none',
+          maxWidth: 'calc(100% - 480px)', overflow: 'hidden',
         }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)' }}>Antarctic Operations Map</div>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            Antarctic Operations Map
+          </div>
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             EPSG:3031 · {state.departureLocation.name} → {state.destinationLocation.name}
           </div>
         </div>
@@ -215,28 +213,35 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
           </div>
         )}
 
-        {/* Forecast timeline */}
+        {/* Forecast timeline container */}
         <div style={{
           position: 'absolute', bottom: 12, left: '50%', transform: 'translateX(-50%)',
           zIndex: 'var(--z-map-overlay)' as any,
-          display: 'flex', gap: 0, background: 'rgba(255,255,255,0.92)', borderRadius: 'var(--r-md)',
-          border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)',
+          display: 'flex', flexDirection: 'column', gap: 6,
+          background: 'var(--surface-alt)', borderRadius: '10px',
+          border: '1px solid var(--border)', padding: '8px 12px',
+          boxShadow: 'var(--shadow-sm)',
         }}>
-          {['NOW', '+6h', '+12h', '+18h', '+24h'].map((h, i) => {
-            const active = i === state.simulationTimeHours / 6;
-            return (
-              <button key={h} onClick={() => polarisStore.setSimulationTime((i * 6) as ValidTimeHorizon)}
-                style={{
-                  padding: '6px 14px', border: 'none', cursor: 'pointer',
-                  fontSize: 11, fontWeight: active ? 700 : 500,
-                  fontFamily: 'var(--font-mono)',
-                  background: active ? 'var(--navy-800)' : 'transparent',
-                  color: active ? 'white' : 'var(--text-muted)',
-                  borderRight: i < 4 ? '1px solid var(--border)' : 'none',
-                }}
-              >{h}</button>
-            );
-          })}
+          <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textAlign: 'center' }}>
+            FORECAST HORIZON
+          </div>
+          <div style={{ display: 'flex', gap: 4 }}>
+            {['NOW', '+6h', '+12h', '+18h', '+24h'].map((h, i) => {
+              const active = i === state.simulationTimeHours / 6;
+              return (
+                <button key={h} onClick={() => polarisStore.setSimulationTime((i * 6) as ValidTimeHorizon)}
+                  style={{
+                    padding: '4px 12px', border: active ? '1px solid var(--blue-500)' : '1px solid transparent', cursor: 'pointer',
+                    fontSize: 11, fontWeight: active ? 700 : 500,
+                    fontFamily: 'var(--font-mono)', borderRadius: '6px',
+                    background: active ? 'var(--blue-100)' : 'transparent',
+                    color: active ? 'var(--blue-500)' : 'var(--text-secondary)',
+                    transition: 'all 0.1s',
+                  }}
+                >{h}</button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -265,32 +270,44 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
               <span className="section-label">ROUTE CANDIDATES</span>
               <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{state.routes.length} evaluated</span>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               {state.routes.map(route => {
                 const sel = route.id === state.selectedRouteId;
                 const rec = route.status === 'RECOMMENDED';
-                const rej = route.type === 'SHORTEST_REJECTED' || route.status === 'REJECTED';
+                const rej = route.status === 'REJECTED' || route.type === 'SHORTEST_REJECTED';
+                
                 return (
                   <button
                     key={route.id}
                     onClick={() => polarisStore.selectRoute(route.id)}
                     style={{
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '8px 10px', borderRadius: 'var(--r-md)',
-                      border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left',
-                      background: sel ? 'var(--blue-50)' : 'var(--surface-alt)',
-                      borderLeft: sel ? '3px solid var(--navy-800)' : '3px solid transparent',
+                      display: 'flex', flexDirection: 'column', gap: 6,
+                      padding: '8px 12px', borderRadius: 'var(--r-md)',
+                      marginBottom: 8, border: '1px solid transparent',
+                      cursor: 'pointer', width: '100%', textAlign: 'left',
+                      background: sel ? 'var(--surface-blue)' : 'var(--surface-card)',
+                      borderLeft: sel ? '4px solid var(--blue-500)' : '4px solid transparent',
+                      outline: sel ? '1px solid var(--blue-300)' : '1px solid var(--border)',
                       transition: 'all 0.1s',
                     }}
                   >
-                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: route.color || 'var(--blue-300)', flexShrink: 0 }} />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: rej ? 'var(--text-faint)' : 'var(--text-primary)', textDecoration: rej ? 'line-through' : 'none' }}>{route.title}</div>
-                      <div style={{ fontSize: 10, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                        {route.metrics.totalDistanceNm}nm · {route.metrics.estimatedTransitFormatted} · Risk {route.metrics.averageRisk}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: '50%', background: route.color || 'var(--blue-300)', flexShrink: 0 }} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: rej ? 'var(--text-faint)' : 'var(--text-primary)', textDecoration: rej ? 'line-through' : 'none' }}>
+                          {route.title}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        {rec && <span className="badge badge-safe">RECOMMENDED</span>}
+                        {rej && <span className="badge badge-muted">REJECTED</span>}
                       </div>
                     </div>
-                    {rec && <span className="badge badge-safe" style={{ fontSize: 8, flexShrink: 0 }}>REC</span>}
+                    <div style={{ display: 'flex', gap: 12, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      <span>{route.metrics.totalDistanceNm} nm</span>
+                      <span>{route.metrics.estimatedTransitFormatted}</span>
+                      <span>Risk {route.metrics.averageRisk}</span>
+                    </div>
                   </button>
                 );
               })}
@@ -299,7 +316,7 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
 
           {/* Why this route */}
           {activeRoute && (
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+            <div style={{ padding: '16px', borderBottom: '1px solid var(--border)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span className="section-label">WHY THIS ROUTE?</span>
                 <button onClick={() => setShowWhyModal(true)} style={{
@@ -307,9 +324,11 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
                   background: 'none', border: 'none', cursor: 'pointer',
                 }}>Details →</button>
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55 }}>{activeRoute.dynamicExplanation}</p>
+              <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.55, marginBottom: 12 }}>
+                {activeRoute.dynamicExplanation}
+              </p>
               {activeRoute.status !== 'APPROVED_BY_HUMAN' && activeRoute.status !== 'REJECTED' && (
-                <button onClick={() => polarisStore.approveRoute(activeRoute.id)} className="btn btn-primary btn-sm" style={{ width: '100%', marginTop: 10 }}>
+                <button onClick={() => polarisStore.approveRoute(activeRoute.id)} className="btn btn-primary" style={{ width: '100%' }}>
                   Approve Route
                 </button>
               )}
@@ -317,10 +336,15 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
           )}
 
           {/* Risk breakdown */}
-          <div style={{ padding: '12px 16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <span className="section-label">RISK BREAKDOWN</span>
-              <span className={`badge ${riskBadge.bgClass}`} style={{ fontSize: 9 }}>{riskBadge.label} ({metrics?.averageRisk ?? 0}/100)</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className={`badge ${riskBadge.bgClass}`}>{riskBadge.label}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-mono)' }}>
+                  {metrics?.averageRisk ?? 0} <span style={{ color: 'var(--text-muted)' }}>/ 100</span>
+                </span>
+              </div>
             </div>
             {RISK_BARS.map(bar => <RiskBarRow key={bar.label} {...bar} />)}
           </div>

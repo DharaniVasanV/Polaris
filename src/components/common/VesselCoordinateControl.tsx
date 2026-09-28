@@ -63,26 +63,33 @@ export const VesselCoordinateControl: React.FC<VesselCoordinateControlProps> = (
           </div>
         </div>
 
-        {/* Search radius */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-muted)' }}>SEARCH RADIUS</span>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {[100, 250, 500].map(r => (
-              <button key={r} type="button" onClick={() => setRadiusKm(r)}
-                style={{
-                  padding: '2px 8px', borderRadius: 'var(--r-sm)', fontSize: 10, fontFamily: 'var(--font-mono)',
-                  fontWeight: 700, cursor: 'pointer',
-                  background: radiusKm === r ? 'var(--navy-800)' : 'var(--surface-card)',
-                  color: radiusKm === r ? 'white' : 'var(--text-muted)',
-                  border: `1px solid ${radiusKm === r ? 'var(--navy-800)' : 'var(--border)'}`,
-                }}>
-                {r}km
-              </button>
-            ))}
+        {/* Search radius (Segmented Control Pattern) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4 }}>
+          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em' }}>SEARCH RADIUS</span>
+          <div style={{ 
+            display: 'flex', background: 'var(--surface-alt)', borderRadius: '6px', 
+            border: '1px solid var(--border)', padding: '2px', gap: 2 
+          }}>
+            {[100, 250, 500].map(r => {
+              const active = radiusKm === r;
+              return (
+                <button key={r} type="button" onClick={() => setRadiusKm(r)}
+                  style={{
+                    flex: 1, padding: '4px 0', borderRadius: '4px', fontSize: 11, fontFamily: 'var(--font-mono)',
+                    fontWeight: active ? 700 : 500, cursor: 'pointer', textAlign: 'center',
+                    background: active ? 'var(--blue-100)' : 'transparent',
+                    color: active ? 'var(--blue-500)' : 'var(--text-secondary)',
+                    border: active ? '1px solid var(--blue-500)' : '1px solid transparent',
+                    transition: 'all 0.1s',
+                  }}>
+                  {r} km
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <button type="submit" disabled={isUpdating || state.sentinel1Status === 'CONNECTING'} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
+        <button type="submit" disabled={isUpdating || state.sentinel1Status === 'CONNECTING'} className="btn btn-secondary" style={{ width: '100%', marginTop: 4 }}>
           {isUpdating || state.sentinel1Status === 'CONNECTING' ? 'Querying Copernicus…' : 'Update Satellite Observation'}
         </button>
       </form>

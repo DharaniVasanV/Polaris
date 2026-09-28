@@ -35,34 +35,35 @@ export const RoutesScreen: React.FC<Props> = ({ state }) => {
             const sel = route.id === state.selectedRouteId;
             const rec = route.status === 'RECOMMENDED';
             const rej = route.type === 'SHORTEST_REJECTED' || route.status === 'REJECTED';
-            const rb = formatRiskBadge(route.metrics.averageRisk);
             return (
               <button key={route.id} onClick={() => polarisStore.selectRoute(route.id)} style={{
-                padding: '10px 10px', borderRadius: 'var(--r-md)', border: 'none', cursor: 'pointer',
+                display: 'flex', flexDirection: 'column', gap: 6,
+                padding: '8px 12px', borderRadius: 'var(--r-md)',
+                marginBottom: 8, border: '1px solid transparent', cursor: 'pointer',
                 width: '100%', textAlign: 'left', transition: 'all 0.1s',
-                background: sel ? 'var(--blue-50)' : 'var(--surface-alt)',
-                borderLeft: sel ? '3px solid var(--navy-800)' : '3px solid transparent',
+                background: sel ? 'var(--surface-blue)' : rej ? 'var(--critical-bg)' : 'var(--surface-card)',
+                borderLeft: sel ? '4px solid var(--blue-500)' : '4px solid transparent',
+                outline: sel ? '1px solid var(--blue-300)' : '1px solid var(--border)',
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: route.color || 'var(--blue-300)', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, fontWeight: 600, color: rej ? 'var(--text-faint)' : 'var(--text-primary)', flex: 1, textDecoration: rej ? 'line-through' : 'none' }}>{route.title}</span>
-                  <span className={`badge ${rec ? 'badge-safe' : rej ? 'badge-critical' : 'badge-info'}`} style={{ fontSize: 8 }}>{route.status}</span>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: route.color || 'var(--blue-300)', flexShrink: 0 }} />
+                    <span style={{ fontSize: 13, fontWeight: 700, color: rej ? 'var(--critical)' : 'var(--text-primary)', textDecoration: rej ? 'line-through' : 'none' }}>
+                      {route.title}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    {rej && <span className="badge badge-critical">REJECTED</span>}
+                    {rec && <span className="badge badge-safe">RECOMMENDED</span>}
+                    {!rej && !rec && <span className="badge badge-muted">{route.status}</span>}
+                  </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 4, marginTop: 4 }}>
-                  {[
-                    { l: 'DIST', v: `${route.metrics.totalDistanceNm}nm` },
-                    { l: 'ETA', v: route.metrics.estimatedTransitFormatted },
-                    { l: 'RISK', v: `${route.metrics.averageRisk}` },
-                  ].map(({ l, v }) => (
-                    <div key={l} style={{ padding: '4px', borderRadius: 4, background: 'var(--surface-card)', border: '1px solid var(--border)', textAlign: 'center' }}>
-                      <div style={{ fontSize: 8, color: 'var(--text-faint)', letterSpacing: '0.05em' }}>{l}</div>
-                      <div style={{ fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>{v}</div>
-                    </div>
-                  ))}
+
+                <div style={{ display: 'flex', gap: 12, fontSize: 11, color: rej ? 'var(--critical)' : 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                  <span>{route.metrics.totalDistanceNm} nm</span>
+                  <span>{route.metrics.estimatedTransitFormatted}</span>
+                  <span>Risk {route.metrics.averageRisk}</span>
                 </div>
-                {rej && (
-                  <div style={{ marginTop: 6, fontSize: 10, color: 'var(--critical)' }}>✗ Fails Polar Code constraints</div>
-                )}
               </button>
             );
           })}

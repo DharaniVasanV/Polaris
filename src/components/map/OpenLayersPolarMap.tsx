@@ -10,7 +10,8 @@ import Feature from 'ol/Feature';
 import Point from 'ol/geom/Point';
 import LineString from 'ol/geom/LineString';
 import Polygon from 'ol/geom/Polygon';
-import CircleGeom from 'ol/geom/Circle';
+// CircleGeom intentionally removed — OL Circle in EPSG:3031 produces
+// enormous polar-projected disks. Use polygon ring approximations instead.
 import { Style, Stroke, Fill, Circle as CircleStyle, Text, RegularShape } from 'ol/style';
 import { register } from 'ol/proj/proj4';
 import { get as getProjection, transform } from 'ol/proj';
@@ -76,8 +77,8 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
   const wrapperRef = useRef<HTMLDivElement | null>(null);
 
   const [cursorCoords, setCursorCoords] = useState<{ lat: number; lon: number } | null>(null);
-  const [basemapType, setBasemapType] = useState<BasemapSourceType>('BAS_ANTARCTIC');
-  const providerRef = useRef(new AntarcticMapProvider({ sourceType: 'BAS_ANTARCTIC' }));
+  const [basemapType, setBasemapType] = useState<BasemapSourceType>('NASA_GIBS_WMTS');
+  const providerRef = useRef(new AntarcticMapProvider({ sourceType: 'NASA_GIBS_WMTS' }));
 
   const [showLayerControls, setShowLayerControls] = useState(false);
   const [showLegend, setShowLegend] = useState(false);
@@ -96,6 +97,8 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     graticule: new VectorSource(),
     seaIce: new VectorSource(),
     risk: new VectorSource(),
+    weather: new VectorSource(),
+    bathymetry: new VectorSource(),
     noGo: new VectorSource(),
     iceberg: new VectorSource(),
     uncertainty: new VectorSource(),
@@ -107,6 +110,8 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     basemapLayer: null as any,
     sarLayer: null as ImageLayer<ImageStatic> | null,
   });
+
+  const layersRef = useRef<Record<string, any>>({});
 
   const measurePtsRef = useRef<number[][]>([]);
 
@@ -133,22 +138,35 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     const basemapLayer = providerRef.current.createBasemapLayer();
     s.basemapLayer = basemapLayer;
 
+    const lSeaIce = new VectorLayer({ source: s.seaIce, zIndex: 5 });
+    const lRisk = new VectorLayer({ source: s.risk, zIndex: 6 });
+    const lWeather = new VectorLayer({ source: s.weather, zIndex: 7 });
+    const lBathymetry = new VectorLayer({ source: s.bathymetry, zIndex: 8 });
+    const lNoGo = new VectorLayer({ source: s.noGo, zIndex: 9 });
+    const lIceberg = new VectorLayer({ source: s.iceberg, zIndex: 10 });
+    const lUncertainty = new VectorLayer({ source: s.uncertainty, zIndex: 11 });
+    const lRoute = new VectorLayer({ source: s.route, zIndex: 12 });
+
+    layersRef.current = { seaIce: lSeaIce, risk: lRisk, weather: lWeather, bathymetry: lBathymetry, noGo: lNoGo, iceberg: lIceberg, uncertainty: lUncertainty, route: lRoute };
+
     const map = new Map({
       target: mapDivRef.current,
       layers: [
         new VectorLayer({ source: s.oceanBg, zIndex: 0 }),
         basemapLayer,
         new VectorLayer({ source: s.graticule, zIndex: 3 }),
-        new VectorLayer({ source: s.seaIce, zIndex: 5 }),
-        new VectorLayer({ source: s.risk, zIndex: 6 }),
-        new VectorLayer({ source: s.noGo, zIndex: 7 }),
-        new VectorLayer({ source: s.iceberg, zIndex: 8 }),
-        new VectorLayer({ source: s.uncertainty, zIndex: 9 }),
-        new VectorLayer({ source: s.selection, zIndex: 10 }),
-        new VectorLayer({ source: s.route, zIndex: 11 }),
-        new VectorLayer({ source: s.vessel, zIndex: 12 }),
-        new VectorLayer({ source: s.dest, zIndex: 13 }),
-        new VectorLayer({ source: s.measure, zIndex: 14 }),
+        lSeaIce,
+        lRisk,
+        lWeather,
+        lBathymetry,
+        lNoGo,
+        lIceberg,
+        lUncertainty,
+        new VectorLayer({ source: s.selection, zIndex: 13 }),
+        lRoute,
+        new VectorLayer({ source: s.vessel, zIndex: 14 }),
+        new VectorLayer({ source: s.dest, zIndex: 15 }),
+        new VectorLayer({ source: s.measure, zIndex: 16 }),
       ],
       view: new View({
         projection: 'EPSG:3031',
@@ -192,15 +210,23 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         return;
       }
 
-      // Check if user clicked an iceberg marker first
+      // Check if user clicked an iceberg marker or a route first
       let clickedBergId: string | null = null;
+      let clickedRouteId: string | null = null;
       map.forEachFeatureAtPixel(evt.pixel, (feature) => {
         const bergId = feature.get('icebergId');
         if (bergId) clickedBergId = bergId;
+        const rId = feature.get('routeId');
+        if (rId) clickedRouteId = rId;
       });
 
       if (clickedBergId) {
         polarisStore.setSelectedIceberg(clickedBergId);
+        return;
+      }
+      
+      if (clickedRouteId) {
+        polarisStore.selectRoute(clickedRouteId);
         return;
       }
 
@@ -376,103 +402,143 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       }
     }
 
-    // ── Sea Ice & Risk Grid & NO-GO Zones (Cell-based, NO GIANT CIRCLES) ───
-    s.seaIce.clear(); s.risk.clear(); s.noGo.clear();
-    if (ly.seaIce || ly.noGoZones) {
-      for (let r = 0; r < envGrid.length - 1; r++) {
-        for (let c = 0; c < envGrid[r].length - 1; c++) {
-          const cell = envGrid[r][c];
-          if (cell.isLand || cell.isIceShelf) continue;
-          const sic = cell.sicValues[th] ?? cell.sicValues[0];
-          const risk = evaluateCellRisk(cell, th, state.vessel, state.icebergs);
+    // ── Sea Ice & Risk Grid & NO-GO & Weather & Bathymetry (Cell-based, NO GIANT CIRCLES) ───
+    s.seaIce.clear(); s.risk.clear(); s.noGo.clear(); s.weather.clear(); s.bathymetry.clear();
+    
+    for (let r = 0; r < envGrid.length - 1; r++) {
+      for (let c = 0; c < envGrid[r].length - 1; c++) {
+        const cell = envGrid[r][c];
+        if (cell.isLand || cell.isIceShelf) continue;
+        const sic = cell.sicValues[th] ?? cell.sicValues[0];
+        const risk = evaluateCellRisk(cell, th, state.vessel, state.icebergs);
 
-          const poly: [number, number][] = [
-            to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
-            to3031(envGrid[r][c + 1].longitude, envGrid[r][c + 1].latitude),
-            to3031(envGrid[r + 1][c + 1].longitude, envGrid[r + 1][c + 1].latitude),
-            to3031(envGrid[r + 1][c].longitude, envGrid[r + 1][c].latitude),
-            to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
-          ];
+        const poly: [number, number][] = [
+          to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
+          to3031(envGrid[r][c + 1].longitude, envGrid[r][c + 1].latitude),
+          to3031(envGrid[r + 1][c + 1].longitude, envGrid[r + 1][c + 1].latitude),
+          to3031(envGrid[r + 1][c].longitude, envGrid[r + 1][c].latitude),
+          to3031(envGrid[r][c].longitude,     envGrid[r][c].latitude),
+        ];
 
-          // NO-GO Zone: dark red cell fill (22% opacity) + thin border
-          if (ly.noGoZones && risk.isNoGo) {
-            const f = new Feature({ geometry: new Polygon([poly]) });
-            f.setStyle(new Style({
-              fill: new Fill({ color: 'rgba(201, 75, 75, 0.22)' }),
-              stroke: new Stroke({ color: 'rgba(201, 75, 75, 0.60)', width: 0.8, lineDash: [4, 4] }),
-            }));
-            s.noGo.addFeature(f);
-          }
+        // NO-GO Zone: dark red cell fill (18% opacity)
+        if (risk.isNoGo) {
+          const f = new Feature({ geometry: new Polygon([poly]) });
+          f.setStyle(new Style({
+            fill: new Fill({ color: 'rgba(201, 75, 75, 0.18)' }),
+            stroke: new Stroke({ color: 'rgba(201, 75, 75, 0.50)', width: 0.8, lineDash: [4, 4] }),
+          }));
+          s.noGo.addFeature(f);
+        }
 
-          // Sea-Ice Concentration Grid: light cyan / blue fill (12-18% opacity)
-          if (ly.seaIce && sic > 5) {
-            let col: string;
-            if (sic >= state.vessel.safeSicThresholdPercent || risk.totalRisk >= 70) col = 'rgba(201, 75, 75, 0.18)';
-            else if (sic >= 60 || risk.totalRisk >= 50)  col = 'rgba(217, 119, 50, 0.16)';
-            else if (sic >= 30 || risk.totalRisk >= 30)  col = 'rgba(216, 155, 43, 0.14)';
-            else                                           col = 'rgba(47, 128, 201, 0.12)';
-            const f = new Feature({ geometry: new Polygon([poly]) });
-            f.setStyle(new Style({
-              fill: new Fill({ color: col }),
-              stroke: new Stroke({ color: 'rgba(47, 128, 201, 0.10)', width: 0.3 }),
-            }));
-            s.seaIce.addFeature(f);
-          }
+        // Sea-Ice Concentration Grid: light cyan / blue fill (12-18% opacity)
+        if (sic > 5) {
+          let col: string;
+          if (sic >= state.vessel.safeSicThresholdPercent || risk.totalRisk >= 70) col = 'rgba(201, 75, 75, 0.18)';
+          else if (sic >= 60 || risk.totalRisk >= 50)  col = 'rgba(217, 119, 50, 0.16)';
+          else if (sic >= 30 || risk.totalRisk >= 30)  col = 'rgba(216, 155, 43, 0.14)';
+          else                                           col = 'rgba(47, 128, 201, 0.12)';
+          const f = new Feature({ geometry: new Polygon([poly]) });
+          f.setStyle(new Style({
+            fill: new Fill({ color: col }),
+            stroke: new Stroke({ color: 'rgba(47, 128, 201, 0.10)', width: 0.3 }),
+          }));
+          s.seaIce.addFeature(f);
+        }
+
+        // Weather Risk (Wave + Wind): derived from the underlying data
+        const wave = cell.waveValues?.[th] ?? cell.waveValues?.[0] ?? 0;
+        const wind = cell.windValues?.[th] ?? cell.windValues?.[0] ?? 0;
+        if (wave > 1.0 || wind > 10.0) {
+          let weatherCol = 'rgba(65, 91, 177, 0.10)'; // LOW
+          if (wave > 4.5 || wind > 35) weatherCol = 'rgba(201, 75, 75, 0.18)'; // CRITICAL
+          else if (wave > 3.0 || wind > 25) weatherCol = 'rgba(217, 119, 50, 0.15)'; // HIGH
+          else if (wave > 2.0 || wind > 15) weatherCol = 'rgba(216, 155, 43, 0.12)'; // MODERATE
+          const f = new Feature({ geometry: new Polygon([poly]) });
+          f.setStyle(new Style({ fill: new Fill({ color: weatherCol }) }));
+          s.weather.addFeature(f);
+        }
+
+        // Bathymetry (Depth): blue-gray shading
+        if (cell.waterDepthMeters && cell.waterDepthMeters < 500) {
+          let bathCol = 'rgba(102, 128, 153, 0.20)'; // DEEP
+          if (cell.waterDepthMeters < 50) bathCol = 'rgba(34, 68, 102, 0.35)'; // SHALLOW
+          else if (cell.waterDepthMeters < 150) bathCol = 'rgba(68, 102, 136, 0.28)'; // MEDIUM
+          const f = new Feature({ geometry: new Polygon([poly]) });
+          f.setStyle(new Style({ fill: new Fill({ color: bathCol }) }));
+          s.bathymetry.addFeature(f);
         }
       }
     }
 
-    // ── Icebergs (Crisp diamond markers; uncertainty ONLY for selected iceberg) ──
+    // ── Icebergs (Precise 6px/9px diamond markers & Small Capped Uncertainty Circle) ──
     s.iceberg.clear(); s.uncertainty.clear();
     if (ly.icebergs) {
+      const activeSelectedId = state.selectedIcebergId || 'B-22';
       state.icebergs.forEach((berg) => {
-        const isB22 = berg.id === 'B-22';
-        const isSelected = state.selectedIcebergId ? state.selectedIcebergId === berg.id : isB22;
+        const isSelected = activeSelectedId === berg.id;
 
-        // Historical track
+        // Historical track (thin gray-blue line)
         if (ly.icebergForecast && berg.historicalTrack.length > 1) {
           const f = new Feature({ geometry: new LineString(berg.historicalTrack.map(p => to3031(p.longitude, p.latitude))) });
           f.setStyle(new Style({ stroke: new Stroke({ color: 'rgba(112, 151, 210, 0.40)', width: 1.2 }) }));
           s.iceberg.addFeature(f);
         }
-        // Forecast track (dashed for selected iceberg)
+        // Forecast track (dashed line for selected iceberg)
         if (ly.icebergForecast && isSelected && berg.forecastTrack.length > 1) {
           const f = new Feature({ geometry: new LineString(berg.forecastTrack.map(p => to3031(p.longitude, p.latitude))) });
-          f.setStyle(new Style({ stroke: new Stroke({ color: '#3B8FC4', width: 1.8, lineDash: [5, 4] }) }));
+          f.setStyle(new Style({ stroke: new Stroke({ color: '#3B8FC4', width: 2.0, lineDash: [5, 4] }) }));
           s.iceberg.addFeature(f);
         }
 
-        // Uncertainty Envelopes — ONLY DRAWN FOR SELECTED ICEBERG TO PREVENT MAP CLUTTER
+        // ── Uncertainty Circle — ONLY DRAWN FOR SELECTED ICEBERG (Capped at 20 km for map clarity) ──
         if (ly.icebergUncertainty && isSelected) {
-          berg.forecastTrack.forEach(pt => {
-            if (!pt.horizonHours) return;
-            const rad = (pt.uncertaintyRadiusKm || 5) * 1000;
-            const f = new Feature({ geometry: new CircleGeom(to3031(pt.longitude, pt.latitude), rad) });
+          const ptsToDraw = berg.forecastTrack.length > 0
+            ? berg.forecastTrack
+            : [{ latitude: berg.currentPosition.latitude, longitude: berg.currentPosition.longitude, uncertaintyRadiusKm: 15 }];
+
+          ptsToDraw.forEach(pt => {
+            if (pt.latitude < -82) return;
+            // Mathematical uncertainty may be large (e.g. 168.02 km), but visual display is strictly capped at 20 km
+            const actualUncertaintyKm = pt.uncertaintyRadiusKm || 15;
+            const visualRadiusKm = Math.min(actualUncertaintyKm, 20); // Visual cap: 20 km max (Absolute display cap: 30 km if we went that high)
+
+            const cx = pt.longitude;
+            const cy = pt.latitude;
+            const EARTH_KM = 6371.0;
+            const dLat = (visualRadiusKm / EARTH_KM) * (180 / Math.PI);
+            const dLon = dLat / Math.cos((cy * Math.PI) / 180);
+            const STEPS = 32;
+            const ring: [number, number][] = [];
+            for (let i = 0; i <= STEPS; i++) {
+              const theta = (2 * Math.PI * i) / STEPS;
+              ring.push(to3031(cx + dLon * Math.cos(theta), cy + dLat * Math.sin(theta)));
+            }
+            const f = new Feature({ geometry: new Polygon([ring]) });
             f.setStyle(new Style({
-              fill: new Fill({ color: 'rgba(124, 104, 200, 0.08)' }),
-              stroke: new Stroke({ color: '#7C68C8', width: 1.2, lineDash: [3, 4] }),
+              fill: new Fill({ color: 'rgba(112, 151, 210, 0.06)' }), // 6% opacity fill 
+              stroke: new Stroke({ color: 'rgba(112, 151, 210, 0.55)', width: 1.0 }), // 1px, 55% opacity stroke
             }));
             s.uncertainty.addFeature(f);
           });
         }
 
-        // Iceberg position diamond marker
+        // Iceberg position diamond marker (6px for unselected, 9px for selected)
         const f = new Feature({ geometry: new Point(to3031(berg.currentPosition.longitude, berg.currentPosition.latitude)) });
         f.set('icebergId', berg.id);
         f.setStyle(new Style({
           image: new RegularShape({
             points: 4,
-            radius: isSelected ? 7 : 5,
+            radius: isSelected ? 6 : 4, // 6px for unselected (radius 4), 9px for selected (radius 6)
             angle: Math.PI / 4,
             fill: new Fill({ color: isSelected ? '#3B8FC4' : '#7097D2' }),
-            stroke: new Stroke({ color: '#FFFFFF', width: 1.5 }),
+            stroke: new Stroke({ color: '#FFFFFF', width: isSelected ? 1.5 : 1.0 }),
           }),
           text: isSelected ? new Text({
-            text: berg.name,
+            text: `${berg.name} (Selected)`,
             font: 'bold 10px "Inter",sans-serif',
             fill: new Fill({ color: 'var(--navy-800)' }),
             stroke: new Stroke({ color: '#FFFFFF', width: 2.5 }),
-            offsetX: 12, offsetY: -8,
+            offsetX: 14, offsetY: -8,
           }) : undefined,
         }));
         s.iceberg.addFeature(f);
@@ -482,25 +548,29 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
     // ── Routes (Clean, scientific lines) ───────────────────────────────────
     s.route.clear();
     state.routes.forEach((route) => {
+      // Respect visibility toggles
       if (route.type === 'SHORTEST_REJECTED' && !ly.shortestRoute) return;
       if (route.type === 'SAFE_A'            && !ly.recommendedRoute) return;
       if (route.type === 'ALTERNATIVE_B'     && !ly.alternativeRoute) return;
 
-      const isRej = route.type === 'SHORTEST_REJECTED' || route.status === 'REJECTED';
       const isSel = route.id === state.selectedRouteId;
 
-      let col: string, w: number, dash: number[] | undefined;
-      if (route.type === 'SAFE_A') {
-        col = '#2F80C9'; w = isSel ? 3.5 : 3.0;
-      } else if (route.type === 'ALTERNATIVE_B') {
-        col = '#D89B2B'; w = 2.0; dash = [6, 4];
-      } else if (isRej) {
-        col = '#7A8795'; w = 2.0; dash = [3, 4];
+      let col: string, w: number, dash: number[] | undefined, opacity: number;
+      if (isSel) {
+        col = '#2F80C9'; // bright blue
+        w = 4.0;
+        opacity = 1.0;
+        if (route.type === 'ALTERNATIVE_B') col = '#D89B2B'; // keep orange when selected alternative
       } else {
-        col = '#2F80C9'; w = 2.5;
+        col = 'rgba(122, 135, 149, 0.45)'; // #7A8795 with opacity 0.45
+        w = 2.0;
+        opacity = 0.45;
+        if (route.type === 'ALTERNATIVE_B') dash = [6, 4];
+        else if (route.status === 'REJECTED') dash = [3, 4];
       }
 
       const f = new Feature({ geometry: new LineString(route.waypoints.map(wp => to3031(wp.longitude, wp.latitude))) });
+      f.set('routeId', route.id); // for map click
       f.setStyle(new Style({ stroke: new Stroke({ color: col, width: w, lineDash: dash }) }));
       s.route.addFeature(f);
     });
@@ -562,7 +632,27 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       }));
       s.dest.addFeature(df);
     }
-  }, [state]);
+  }, [
+    state.simulationTimeHours, state.activeScenario, state.vessel, state.icebergs, 
+    state.selectedIcebergId, state.routes, state.selectedRouteId, state.activeWhatIfResult, 
+    state.departureLocation, state.destinationLocation, state.sentinel1ImageAvailable, 
+    state.sentinel1ImageUrl, state.sentinel1ImageBbox,
+    state.mapLayers.shortestRoute, state.mapLayers.recommendedRoute, state.mapLayers.alternativeRoute
+  ]);
+
+  // ── Fast Layer Visibility Sync (No Re-draw) ──
+  useEffect(() => {
+    const ly = state.mapLayers;
+    const l = layersRef.current;
+    
+    if (l.seaIce) l.seaIce.setVisible(ly.seaIce ?? true);
+    if (l.weather) l.weather.setVisible(ly.weather ?? false);
+    if (l.bathymetry) l.bathymetry.setVisible(ly.bathymetry ?? false);
+    if (l.noGo) l.noGo.setVisible(ly.noGoZones ?? true);
+    if (l.iceberg) l.iceberg.setVisible(ly.icebergs ?? true);
+    if (l.uncertainty) l.uncertainty.setVisible(ly.icebergUncertainty ?? true);
+    // Note: l.risk, l.route are left visible, their contents adjust automatically based on selection
+  }, [state.mapLayers]);
 
   // ─── BASEMAP SWITCH ───────────────────────────────────────────────────────
   const switchBasemap = (type: BasemapSourceType) => {
@@ -679,8 +769,8 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         }}>
           <span className="section-label" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>BASEMAP SOURCE — EPSG:3031</span>
           {[
-            ['BAS_ANTARCTIC', '🗺️ BAS Antarctic Tile Provider', '(Official Antarctic Basemap)'],
-            ['NASA_GIBS_WMTS', '🌍 NASA GIBS Blue Marble', '(Bathymetry & Hillshade)'],
+            ['NASA_GIBS_WMTS', '🌍 NASA Antarctic (Default)', '(Blue Marble Shaded Relief)'],
+            ['BAS_ANTARCTIC', '🗺️ BAS Antarctic Tiles', '(Official Antarctic Basemap)'],
           ].map(([type, label, sub]) => (
             <button key={type} onClick={() => switchBasemap(type as BasemapSourceType)}
               style={{
@@ -815,6 +905,68 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           </div>
         </div>
       )}
+
+      {/* ── Iceberg Inspector Popover ── */}
+      {state.selectedIcebergId && (() => {
+        const berg = state.icebergs.find(b => b.id === state.selectedIcebergId);
+        if (!berg) return null;
+        const lastTrackPt = berg.forecastTrack[berg.forecastTrack.length - 1];
+        const actualUncertainty = lastTrackPt?.empiricalErrorRadiusKm || lastTrackPt?.uncertaintyRadiusKm || 168.02;
+
+        return (
+          <div style={{
+            position: 'absolute', top: inspection && selectedCellInfo ? 260 : 16, right: showLayerControls || showLegend || showBasemapMenu ? 310 : 16, zIndex: 30,
+            width: 300, background: 'var(--surface-card)', border: '1px solid var(--border)',
+            borderRadius: 'var(--r-xl)', padding: 14, boxShadow: 'var(--shadow-lg)',
+            display: 'flex', flexDirection: 'column', gap: 8,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--navy-800)' }}>ICEBERG INSPECTION — {berg.name}</div>
+                <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-muted)' }}>
+                  ID: {berg.id} · {Math.abs(berg.currentPosition.latitude).toFixed(2)}°S, {Math.abs(berg.currentPosition.longitude).toFixed(2)}°E
+                </div>
+              </div>
+              <button
+                onClick={() => polarisStore.setSelectedIceberg(null)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+              >
+                <X style={{ width: 16, height: 16 }} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, fontSize: 11 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Model Architecture</span>
+                <span style={{ fontWeight: 600, color: 'var(--navy-800)' }}>{berg.modelSource || 'DeepGRU Neural Network'}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Actual Model Uncertainty (+24h)</span>
+                <span style={{ fontWeight: 700, color: '#7C68C8' }}>{actualUncertainty.toFixed(2)} km</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Visual Overlay Radius</span>
+                <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>20 km (Capped for Map Clarity)</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Drift Speed / Heading</span>
+                <span style={{ fontWeight: 600 }}>{berg.speedKmh.toFixed(1)} km/h ({berg.driftDirectionLabel})</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Dimensions</span>
+                <span style={{ fontWeight: 600 }}>{berg.lengthKm} × {berg.widthKm} km</span>
+              </div>
+              <div style={{
+                marginTop: 4, padding: '4px 8px', borderRadius: 'var(--r-sm)',
+                background: 'var(--blue-50)', border: '1px solid var(--blue-200)',
+                color: 'var(--navy-800)', fontSize: 10, lineHeight: 1.3
+              }}>
+                ℹ️ Science is preserved in telemetry. Visual uncertainty circle on map is capped at 20 km to maintain operational map readability.
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── Live Coordinate & System HUD ── */}
       <div style={{

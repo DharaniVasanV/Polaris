@@ -107,17 +107,23 @@ export const RiskTwinScreen: React.FC<Props> = ({ state }) => {
       }}>
         <div style={{ padding: '10px 16px', background: 'var(--navy-800)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ color: 'var(--text-inverse)', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em' }}>RISK BREAKDOWN</span>
-          <span className={`badge ${rb.bgClass}`} style={{ fontSize: 9 }}>{rb.label}</span>
         </div>
         <div style={{ flex: 1, overflowY: 'auto', padding: 16 }}>
 
           <div style={{
-            textAlign: 'center', padding: '16px 0 20px', borderBottom: '1px solid var(--border)', marginBottom: 16,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10,
+            padding: '8px 0 20px', borderBottom: '1px solid var(--border)', marginBottom: 16,
           }}>
-            <div style={{ fontSize: 36, fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-              {breakdown.composite_risk}
+            <span className={`badge ${rb.bgClass}`}>{rb.label}</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
+              <span style={{ fontSize: 36, fontWeight: 800, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', lineHeight: 1 }}>
+                {breakdown.composite_risk}
+              </span>
+              <span style={{ fontSize: 18, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                / 100
+              </span>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Composite Risk Score (0–100)</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Composite Risk Score</div>
           </div>
 
           <RiskBar label="Sea-Ice (ConvLSTM)" score={breakdown.sea_ice_score} color="#4EAEE5" />
