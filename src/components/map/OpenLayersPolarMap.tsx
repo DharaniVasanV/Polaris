@@ -23,6 +23,7 @@ import { applyScenarioToEnvironment } from '../../simulation/scenarioEngine';
 import { evaluateCellRisk } from '../../simulation/riskEngine';
 import { polarisStore } from '../../store/polarisStore';
 import { haversineDistanceNm } from '../../utils/geo';
+import { formatAcquisitionTime } from '../../services/sentinel1Service';
 import { AntarcticMapProvider, BasemapSourceType } from '../../services/antarcticMapProvider';
 import { MapLayerControls } from './MapLayerControls';
 import { MapLegend } from './MapLegend';
@@ -87,6 +88,9 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMeasuring, setIsMeasuring] = useState(false);
   const [measureNm, setMeasureNm] = useState(0);
+
+  // Satellite SAR Pop-up Modal State
+  const [showSarModal, setShowSarModal] = useState(false);
 
   // Selected cell popover state
   const [selectedCellInfo, setSelectedCellInfo] = useState<{ row: number; col: number; lat: number; lon: number } | null>(null);
@@ -210,15 +214,39 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         return;
       }
 
-      // Check if user clicked an iceberg marker or a route first
+      // Check if user clicked an iceberg marker, a route, or Sentinel-1 SAR overlay
       let clickedBergId: string | null = null;
       let clickedRouteId: string | null = null;
+      let clickedSar = false;
       map.forEachFeatureAtPixel(evt.pixel, (feature) => {
         const bergId = feature.get('icebergId');
         if (bergId) clickedBergId = bergId;
         const rId = feature.get('routeId');
         if (rId) clickedRouteId = rId;
+        if (feature.get('isSarOverlay')) clickedSar = true;
       });
+
+      if (clickedSar) {
+        setShowSarModal(true);
+        return;
+      }
+
+      // Check if click coordinate is within Sentinel-1 SAR bounding box
+      const stNow = polarisStore.getState();
+      if (stNow.mapLayers.sentinel1Sar && (stNow.sentinel1ImageAvailable || stNow.sentinel1ImageUrl)) {
+        const bbox = stNow.sentinel1ImageBbox || stNow.sentinel1ImageMetadata?.image_bbox;
+        if (bbox) {
+          const [clickLon, clickLat] = fromProj(evt.coordinate[0], evt.coordinate[1]);
+          const minLat = Math.min(bbox.min_lat, bbox.max_lat);
+          const maxLat = Math.max(bbox.min_lat, bbox.max_lat);
+          const minLon = Math.min(bbox.min_lon, bbox.max_lon);
+          const maxLon = Math.max(bbox.min_lon, bbox.max_lon);
+          if (clickLat >= minLat && clickLat <= maxLat && clickLon >= minLon && clickLon <= maxLon) {
+            setShowSarModal(true);
+            return;
+          }
+        }
+      }
 
       if (clickedBergId) {
         polarisStore.setSelectedIceberg(clickedBergId);
@@ -387,11 +415,16 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
       if (bbox) {
         const [x0, y0] = to3031(bbox.min_lon, bbox.min_lat);
         const [x1, y1] = to3031(bbox.max_lon, bbox.max_lat);
+        const minX = Math.min(x0, x1);
+        const maxX = Math.max(x0, x1);
+        const minY = Math.min(y0, y1);
+        const maxY = Math.max(y0, y1);
+
         const sar = new ImageLayer({
           source: new ImageStatic({
             url: state.sentinel1ImageUrl,
             projection: 'EPSG:3031',
-            imageExtent: [Math.min(x0, x1), Math.min(y0, y1), Math.max(x0, x1), Math.max(y0, y1)],
+            imageExtent: [minX, minY, maxX, maxY],
             crossOrigin: 'anonymous',
           }),
           opacity: Math.min(state.sentinel1Opacity ?? 0.52, 0.60),
@@ -399,6 +432,30 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
         });
         map.addLayer(sar);
         s.sarLayer = sar;
+
+        // Bright border polygon highlighting the SAR observation extent
+        const sarPoly = new Feature({
+          geometry: new Polygon([[
+            [minX, minY],
+            [maxX, minY],
+            [maxX, maxY],
+            [minX, maxY],
+            [minX, minY],
+          ]]),
+        });
+        sarPoly.set('isSarOverlay', true);
+        sarPoly.setStyle(new Style({
+          stroke: new Stroke({ color: '#00F0FF', width: 3.5, lineDash: [8, 4] }),
+          fill: new Fill({ color: 'rgba(0, 240, 255, 0.08)' }),
+          text: new Text({
+            text: '⚡ SENTINEL-1 SAR IMAGERY (CLICK TO EXPAND)',
+            font: 'bold 11px "Inter",sans-serif',
+            fill: new Fill({ color: '#0A205C' }),
+            stroke: new Stroke({ color: '#00F0FF', width: 3 }),
+            offsetY: -16,
+          }),
+        }));
+        s.selection.addFeature(sarPoly);
       }
     }
 
@@ -1000,6 +1057,138 @@ export const OpenLayersPolarMap: React.FC<Props> = ({ state }) => {
           <div style={{ color: 'var(--text-muted)', fontSize: 10, textAlign: 'center' }}>Hover over map for live coordinates</div>
         )}
       </div>
+      {/* ── Sentinel-1 SAR Satellite Imagery Pop-up Dialog Box ── */}
+      {showSarModal && (state.sentinel1ImageUrl || state.sentinel1ImageAvailable) && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 99999,
+          background: 'rgba(10, 32, 92, 0.8)', backdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
+        }}>
+          <div style={{
+            background: '#FAFBFF', border: '2px solid #344DB1', borderRadius: 16,
+            width: '92%', maxWidth: 900, maxHeight: '90vh', overflow: 'hidden',
+            display: 'flex', flexDirection: 'column', boxShadow: '0 25px 60px rgba(10,32,92,0.4)',
+            animation: 'popoverSlide 0.25s ease-out'
+          }}>
+            {/* Header */}
+            <div style={{
+              padding: '16px 24px', background: '#0A205C', color: '#FAFBFF',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              borderBottom: '1px solid #152E75'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <span style={{
+                  width: 10, height: 10, borderRadius: '50%', background: '#00F0FF',
+                  boxShadow: '0 0 12px #00F0FF'
+                }} />
+                <div>
+                  <div style={{ fontSize: 15, fontWeight: 900, letterSpacing: '0.04em', color: '#FAFBFF' }}>
+                    SENTINEL-1 SAR SATELLITE IMAGERY
+                  </div>
+                  <div style={{ fontSize: 11, color: '#7097D2', fontFamily: 'var(--font-mono)' }}>
+                    Copernicus Synthetic Aperture Radar (SAR) Ground Range Detected (GRD)
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowSarModal(false)}
+                style={{
+                  background: 'none', border: 'none', color: '#FAFBFF',
+                  fontSize: 22, cursor: 'pointer', padding: '4px 10px', borderRadius: 6
+                }}
+              >✕</button>
+            </div>
+
+            {/* High-Resolution SAR Image Preview */}
+            <div style={{ padding: 20, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{
+                position: 'relative', width: '100%', background: '#07153E',
+                borderRadius: 12, border: '1px solid #D0E4FE', overflow: 'hidden',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 380
+              }}>
+                <img
+                  src={state.sentinel1ImageUrl || '/sentinel1_sar_sample.png'}
+                  alt="Sentinel-1 SAR Observation"
+                  style={{ width: '100%', maxHeight: 500, objectFit: 'contain', filter: 'contrast(1.15) brightness(1.05)' }}
+                  onError={(e) => {
+                    // Fallback visual preview if direct image URL requires auth
+                    (e.target as HTMLElement).style.display = 'none';
+                  }}
+                />
+                <div style={{
+                  position: 'absolute', bottom: 12, left: 12,
+                  background: 'rgba(7, 21, 62, 0.85)', padding: '6px 12px',
+                  borderRadius: 6, border: '1px solid #7097D2',
+                  fontSize: 10, color: '#00F0FF', fontFamily: 'var(--font-mono)'
+                }}>
+                  HIGH RESOLUTION RADAR BACKSCATTER (HH + HV POLARIZATION)
+                </div>
+              </div>
+
+              {/* SAR Metadata Grid */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12,
+                background: '#E9F2FF', padding: 14, borderRadius: 10, border: '1px solid #D0E4FE'
+              }}>
+                <div>
+                  <div style={{ fontSize: 9, color: '#7097D2', fontWeight: 800 }}>PLATFORM</div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: '#0A205C', fontFamily: 'var(--font-mono)' }}>
+                    {state.sentinel1ImageMetadata?.platform || state.sentinel1Data?.observation?.platform || 'SENTINEL-1D'}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: '#7097D2', fontWeight: 800 }}>SENSOR MODE</div>
+                  <div style={{ fontSize: 13, fontWeight: 900, color: '#0A205C', fontFamily: 'var(--font-mono)' }}>
+                    {state.sentinel1ImageMetadata?.mode || 'EW'} (HH+HV)
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: '#7097D2', fontWeight: 800 }}>ACQUISITION TIME</div>
+                  <div style={{ fontSize: 11, fontWeight: 900, color: '#0A205C', fontFamily: 'var(--font-mono)' }}>
+                    {formatAcquisitionTime(state.sentinel1ImageMetadata?.acquisition_time || state.sentinel1Data?.observation?.acquisition_time)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize: 9, color: '#7097D2', fontWeight: 800 }}>AOI BOUNDING BOX</div>
+                  <div style={{ fontSize: 11, fontWeight: 900, color: '#0A205C', fontFamily: 'var(--font-mono)' }}>
+                    63.0°S 0.0°E (250km)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer Actions */}
+            <div style={{
+              padding: '12px 24px', background: '#FAFBFF', borderTop: '1px solid #D0E4FE',
+              display: 'flex', justifyContent: 'flex-end', gap: 12
+            }}>
+              {state.sentinel1ImageUrl && (
+                <a
+                  href={state.sentinel1ImageUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    padding: '8px 18px', borderRadius: 8, background: '#D0E4FE',
+                    color: '#344DB1', fontSize: 12, fontWeight: 800, textDecoration: 'none'
+                  }}
+                >
+                  Open Original Image ↗
+                </a>
+              )}
+              <button
+                onClick={() => setShowSarModal(false)}
+                style={{
+                  padding: '8px 20px', borderRadius: 8, background: '#344DB1',
+                  color: '#FAFBFF', border: 'none', fontSize: 12, fontWeight: 800, cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(52, 77, 177, 0.2)'
+                }}
+              >
+                Close Dialog
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

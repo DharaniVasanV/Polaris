@@ -121,9 +121,9 @@ export const VesselCoordinateControl: React.FC<VesselCoordinateControlProps> = (
               ['Acquired', formatAcquisitionTime(state.sentinel1ImageMetadata.acquisition_time)],
               ['Provenance', 'RECENT (NOT LIVE)'],
             ].map(([l, v]) => (
-              <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11 }}>
-                <span style={{ color: 'var(--text-muted)' }}>{l}</span>
-                <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: 10 }}>{v}</span>
+              <div key={l as string} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, fontSize: 11 }}>
+                <span style={{ color: 'var(--text-muted)', flexShrink: 0 }}>{l}</span>
+                <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: 10, textAlign: 'right', wordBreak: 'break-word' }}>{v}</span>
               </div>
             ))}
           </div>

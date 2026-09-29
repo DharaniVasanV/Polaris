@@ -12,9 +12,15 @@ interface Props { state: PolarisAppState; }
 
 function DR({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '3px 0', fontSize: 12 }}>
-      <span style={{ color: 'var(--text-muted)' }}>{label}</span>
-      <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', fontSize: 12 }}>{value}</span>
+    <div style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+      gap: 12, padding: '5px 0', fontSize: 12, borderBottom: '1px solid rgba(208, 228, 254, 0.4)'
+    }}>
+      <span style={{ color: '#7097D2', fontWeight: 600, flexShrink: 0 }}>{label}</span>
+      <span style={{
+        fontWeight: 700, fontFamily: 'var(--font-mono)', color: '#0A205C',
+        textAlign: 'right', wordBreak: 'break-word', transition: 'all 0.3s ease'
+      }}>{value}</span>
     </div>
   );
 }
@@ -259,7 +265,7 @@ export const DashboardScreen: React.FC<Props> = ({ state }) => {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <span className={`status-dot ${navStatus.status === 'TRAVERSABLE' ? 'status-dot-on' : navStatus.status === 'NO_FEASIBLE_ROUTE' ? 'status-dot-crit' : 'status-dot-warn'}`} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: navColor }}>{navStatus.status.replace('_', ' ')}</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: navColor }}>{navStatus.status.replace(/_/g, ' ')}</span>
             </div>
             <p style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.5 }}>{navStatus.explanation}</p>
           </div>
