@@ -42,15 +42,12 @@ export const LoginScreen: React.FC = () => {
         />
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 32 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.12)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              <svg width="18" height="18" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-              </svg>
-            </div>
-            <span style={{ fontWeight: 900, fontSize: 20, letterSpacing: '0.12em', color: 'white' }}>POLARIS</span>
+            <img
+              src="/polaris-logo.png"
+              alt="POLARIS Logo"
+              style={{ width: 44, height: 44, objectFit: 'contain' }}
+            />
+            <span style={{ fontWeight: 900, fontSize: 22, letterSpacing: '0.12em', color: 'white' }}>POLARIS</span>
           </div>
           <h2 style={{ fontSize: 28, fontWeight: 700, color: 'white', lineHeight: 1.3, maxWidth: 400, marginBottom: 16 }}>
             Predictive Ocean–Ice Learning for Antarctic Route Intelligence

@@ -25,11 +25,11 @@ export const Header: React.FC<HeaderProps> = ({ state, onOpenEventLog, onOpenDem
       <div className="px-5 py-2.5 flex items-center justify-between">
         {/* LEFT: Branding */}
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#415BB1] flex items-center justify-center border border-[#7097D2]/40 shadow-sm">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-          </div>
+          <img
+            src="/polaris-logo.png"
+            alt="POLARIS Logo"
+            className="w-9 h-9 object-contain drop-shadow"
+          />
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-base font-black tracking-wider text-white">POLARIS</h1>

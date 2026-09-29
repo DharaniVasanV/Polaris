@@ -73,14 +73,11 @@ export const AppShell: React.FC<AppShellProps> = ({ state, children }) => {
           aria-label="Go to Dashboard"
           style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}
         >
-          <div style={{
-            width: 32, height: 32, borderRadius: 8,
-            background: 'var(--blue-500)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <svg width="16" height="16" fill="none" stroke="white" strokeWidth="2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-            </svg>
-          </div>
+          <img
+            src="/polaris-logo.png"
+            alt="POLARIS Logo"
+            style={{ width: 32, height: 32, objectFit: 'contain' }}
+          />
           <span style={{ color: 'white', fontWeight: 900, fontSize: 15, letterSpacing: '0.12em' }}>POLARIS</span>
         </button>
 

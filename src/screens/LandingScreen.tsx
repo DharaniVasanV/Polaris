@@ -47,15 +47,11 @@ export const LandingScreen: React.FC<Props> = ({ state }) => {
       }}>
         {/* Brand Logo */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, borderRadius: 8,
-            background: isScrolled ? '#0A205C' : '#344DB1',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <svg width="18" height="18" fill="none" stroke="#FAFBFF" strokeWidth="2.2" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-            </svg>
-          </div>
+          <img
+            src="/polaris-logo.png"
+            alt="POLARIS Logo"
+            style={{ width: 36, height: 36, objectFit: 'contain' }}
+          />
           <span style={{
             fontWeight: 900, fontSize: 16, letterSpacing: '0.12em',
             color: isScrolled ? '#0A205C' : '#FAFBFF'
